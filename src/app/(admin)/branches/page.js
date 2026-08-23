@@ -28,17 +28,17 @@ export default function BranchesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Branches</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Branches</h1>
         <button onClick={() => setShowForm(v => !v)} className="btn-primary text-sm">+ Add Branch</button>
       </div>
 
       {showForm && (
         <form onSubmit={handleCreate} className="card space-y-4">
           <h2 className="font-semibold text-gray-700">New Branch</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {[['name', 'Branch Name', true], ['address', 'Address', true], ['city', 'City', false], ['phone', 'Phone', false], ['email', 'Email', false]].map(([k, l, req]) => (
-              <div key={k} className={k === 'address' ? 'sm:col-span-2' : ''}>
+              <div key={k} className={k === 'address' ? 'col-span-2' : ''}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{l} {req && '*'}</label>
                 <input required={req} className="input" value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} />
               </div>
@@ -53,9 +53,9 @@ export default function BranchesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
-          <div className="col-span-full text-center py-12 text-gray-400">Loading…</div>
+          <div className="col-span-3 text-center py-12 text-gray-400">Loading…</div>
         ) : branches.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-400">No branches yet</div>
+          <div className="col-span-3 text-center py-12 text-gray-400">No branches yet</div>
         ) : branches.map(b => (
           <div key={b._id} className={`card ${!b.isActive ? 'opacity-50' : ''}`}>
             <div className="flex items-start justify-between mb-2">
