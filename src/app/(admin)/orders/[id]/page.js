@@ -6,13 +6,26 @@ import { useAuth } from '@/context/AuthContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
-const STATUS_FLOW = ['received', 'cutting', 'stitching', 'pressing', 'quality_check', 'ready', 'delivered'];
+// 'draft' isn't part of the visual progress bar — it's a pre-flow state where
+// admin hasn't finished assigning staff yet. '*_review' stages are where the
+// Checker approves/rejects a finished stage before it moves on.
+const STATUS_FLOW = [
+  'received',
+  'cutting', 'cutting_review',
+  'stitching', 'stitching_review',
+  'pressing', 'pressing_review',
+  'quality_check', 'ready', 'delivered',
+];
 
 const STATUS_COLORS = {
+  draft: 'bg-slate-100 text-slate-600',
   received: 'bg-blue-100 text-blue-800',
   cutting: 'bg-yellow-100 text-yellow-800',
+  cutting_review: 'bg-amber-100 text-amber-800',
   stitching: 'bg-purple-100 text-purple-800',
+  stitching_review: 'bg-amber-100 text-amber-800',
   pressing: 'bg-orange-100 text-orange-800',
+  pressing_review: 'bg-amber-100 text-amber-800',
   quality_check: 'bg-cyan-100 text-cyan-800',
   ready: 'bg-green-100 text-green-800',
   delivered: 'bg-gray-100 text-gray-700',
@@ -20,11 +33,33 @@ const STATUS_COLORS = {
   cancelled: 'bg-gray-200 text-gray-500',
 };
 
+const STATUS_LABELS = {
+  cutting_review: 'Awaiting Checker (Cutting)',
+  stitching_review: 'Awaiting Checker (Stitching)',
+  pressing_review: 'Awaiting Checker (Pressing)',
+};
+
+const STAFF_ROLES = [
+  ['cuttingMaster', 'cutting_master', '✂️ Cutting Master'],
+  ['stitcher', 'stitcher', '🧵 Stitcher'],
+  ['presser', 'presser', '🔥 Press Man'],
+];
+
+// Staff submit their finished work for review — Checker then approves/rejects
+// via the separate /review endpoint, not this table.
 const ROLE_TRANSITIONS = {
-  cutting_master: { received: 'cutting', cutting: 'stitching' },
-  stitcher: { stitching: 'pressing' },
-  presser: { pressing: 'quality_check' },
+  cutting_master: { received: 'cutting', cutting: 'cutting_review' },
+  stitcher: { stitching: 'stitching_review' },
+  presser: { pressing: 'pressing_review' },
   stock_manager: { quality_check: 'ready', ready: 'delivered' },
+  // Checker can also push received/cutting/stitching/pressing forward
+  // themselves (override power), same moves as the working staff make.
+  // Approving/rejecting a *_review status is handled by the Review card below.
+  checker: {
+    received: 'cutting', cutting: 'cutting_review',
+    stitching: 'stitching_review',
+    pressing: 'pressing_review',
+  },
 };
 
 const MEASUREMENT_FIELDS = [
@@ -38,19 +73,100 @@ export default function OrderDetailPage() {
   const { user } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [payment, setPayment] = useState({ amount: '', method: 'cash' });
   const [paying, setPaying] = useState(false);
   const [rackNum, setRackNum] = useState('');
 
-  const fetchOrder = () => {
-    setLoading(true);
+  // Draft-only staff assignment
+  const [staffByRole, setStaffByRole] = useState({});
+  const [assignment, setAssignment] = useState({ cuttingMaster: '', stitcher: '', presser: '' });
+  const [assigning, setAssigning] = useState(false);
+  const [autoAssigning, setAutoAssigning] = useState(false);
+
+  const fetchOrder = ({ silent = false } = {}) => {
+    if (silent) setRefreshing(true); else setLoading(true);
     api.get(`/orders/${id}`)
-      .then(r => { setOrder(r.data.data); setRackNum(r.data.data.rackNumber || ''); })
+      .then(r => {
+        setOrder(r.data.data);
+        setRackNum(r.data.data.rackNumber || '');
+        if (silent) toast.success('Order refreshed');
+      })
       .catch(err => toast.error(err.response?.data?.message || 'Failed to load'))
-      .finally(() => setLoading(false));
+      .finally(() => { setLoading(false); setRefreshing(false); });
   };
 
   useEffect(() => { fetchOrder(); }, [id]);
+
+  // Load assignable staff once we know this order is a draft
+  useEffect(() => {
+    if (order?.status !== 'draft') return;
+    Promise.all(STAFF_ROLES.map(([, role]) => api.get('/staff', { params: { role } })))
+      .then(results => {
+        const map = {};
+        STAFF_ROLES.forEach(([field], i) => { map[field] = results[i].data.data.filter(s => s.isActive); });
+        setStaffByRole(map);
+      })
+      .catch(console.error);
+  }, [order?.status]);
+
+  const saveAssignment = async (e) => {
+    e.preventDefault();
+    setAssigning(true);
+    try {
+      const { data } = await api.put(`/orders/${id}/assign`, {
+        cuttingMaster: assignment.cuttingMaster || null,
+        stitcher: assignment.stitcher || null,
+        presser: assignment.presser || null,
+      });
+      setOrder(data.data);
+      toast.success(data.data.status === 'draft' ? 'Assignment saved' : 'Staff assigned — order is now active');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to assign');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const autoAssign = async () => {
+    setAutoAssigning(true);
+    try {
+      const { data } = await api.put(`/orders/${id}/assign`, { auto: true });
+      setOrder(data.data);
+      setAssignment({
+        cuttingMaster: data.data.cuttingMaster?._id || '',
+        stitcher: data.data.stitcher?._id || '',
+        presser: data.data.presser?._id || '',
+      });
+      if (data.data.status === 'draft') {
+        toast('Auto Assign only picks staff with login access — no eligible cutting master found, still in draft', { icon: '⚠️' });
+      } else {
+        toast.success('Auto assigned — order is now active');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Auto assign failed');
+    } finally {
+      setAutoAssigning(false);
+    }
+  };
+
+  // Checker approve/reject
+  const [remark, setRemark] = useState('');
+  const [reviewing, setReviewing] = useState(false);
+
+  const submitReview = async (decision) => {
+    setReviewing(true);
+    try {
+      const { data } = await api.put(`/orders/${id}/review`, { decision, remark: remark.trim() || undefined });
+      setOrder(data.data);
+      setRemark('');
+      toast.success(decision === 'approve' ? 'Approved — moved to next stage' : 'Sent back with your remark');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit review');
+    } finally {
+      setReviewing(false);
+    }
+  };
 
   const advanceStatus = async (nextStatus) => {
     try {
@@ -98,20 +214,26 @@ export default function OrderDetailPage() {
 
   const role = user?.role;
   const isAdmin = ['super_admin', 'admin'].includes(role);
-  const isStaff = !isAdmin;
+  const isChecker = role === 'checker';
+  const isStaff = !isAdmin && !isChecker;
+  const isReviewStage = order.status?.endsWith('_review');
 
   // What each role can see
   const canSeeCustomerInfo = isAdmin;               // name, phone — admin only
-  const canSeeMeasurements = !['stock_manager'].includes(role); // cutting/stitching/presser + admin need it
+  const canSeeMeasurements = isAdmin || isChecker || !['stock_manager'].includes(role); // cutting/stitching/presser + admin/checker need it
   const canSeePricing = isAdmin;
-  const canSeeStaffAssignment = isAdmin;
+  const canSeeStaffAssignment = isAdmin || isChecker;
   const canUpdateRack = isAdmin || role === 'stock_manager';
   const canAddPayment = isAdmin;
 
   const currentIdx = STATUS_FLOW.indexOf(order.status);
 
-  // Status advance button
+  // Status advance button — draft orders leave draft only via the assignment
+  // card above (assigning a cutting master). Review stages are handled by the
+  // Checker's approve/reject card below, never by this generic advance button
+  // (even for admin, so the checker's remark flow stays the single path).
   const getNextStatus = () => {
+    if (order.status === 'draft' || isReviewStage) return null;
     if (isAdmin) return STATUS_FLOW[currentIdx + 1] || null;
     return ROLE_TRANSITIONS[role]?.[order.status] || null;
   };
@@ -127,35 +249,109 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 font-mono">{order.orderNumber}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-mono break-all">{order.orderNumber}</h1>
           <div className="flex gap-2 mt-1 flex-wrap">
             <span className={`badge ${STATUS_COLORS[order.status] || 'bg-gray-100'}`}>
-              {order.status?.replace(/_/g, ' ')}
+              {STATUS_LABELS[order.status] || order.status?.replace(/_/g, ' ')}
             </span>
             {order.isRush && <span className="badge bg-red-500 text-white">RUSH</span>}
             {order.isPickedUp && <span className="badge bg-green-100 text-green-700">Picked Up ✓</span>}
           </div>
         </div>
-        {nextStatus && (
-          <button onClick={() => advanceStatus(nextStatus)} className="btn-primary text-sm">
-            Mark as {nextStatus.replace(/_/g, ' ')} →
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => fetchOrder({ silent: true })} disabled={refreshing} className="btn-secondary text-sm" title="Refresh order">
+            {refreshing ? '⏳ Refreshing…' : '🔄 Refresh'}
           </button>
-        )}
-      </div>
-
-      {/* Progress bar */}
-      <div className="card p-4">
-        <div className="flex gap-1 overflow-x-auto pb-1">
-          {STATUS_FLOW.map((s, i) => (
-            <div key={s} className="flex flex-col items-center gap-1 shrink-0">
-              <div className={`h-2 w-10 rounded-full transition-colors ${i <= currentIdx ? 'bg-primary' : 'bg-gray-200'}`} />
-              <span className="hidden lg:block text-gray-400 text-center capitalize" style={{ fontSize: '10px' }}>
-                {s.replace(/_/g, ' ')}
-              </span>
-            </div>
-          ))}
+          {nextStatus && (
+            <button onClick={() => advanceStatus(nextStatus)} className="btn-primary text-sm">
+              Mark as {nextStatus.replace(/_/g, ' ')} →
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Progress bar — not shown for drafts, they haven't entered the flow yet */}
+      {order.status !== 'draft' && (
+        <div className="card p-4">
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {STATUS_FLOW.map((s, i) => (
+              <div key={s} className="flex flex-col items-center gap-1 shrink-0">
+                <div className={`h-2 w-10 rounded-full transition-colors ${i <= currentIdx ? 'bg-primary' : 'bg-gray-200'}`} />
+                <span className="hidden lg:block text-gray-400 text-center capitalize" style={{ fontSize: '10px' }}>
+                  {s.replace(/_/g, ' ')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Draft: assign staff to activate the order — admin only ── */}
+      {isAdmin && order.status === 'draft' && (
+        <div className="card space-y-4 border-2 border-dashed border-primary/30">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-gray-700">📝 Assign Staff to Activate</h2>
+            <button type="button" onClick={autoAssign} disabled={autoAssigning} className="btn-secondary text-xs">
+              {autoAssigning ? 'Assigning…' : '⚡ Auto Assign'}
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 -mt-2">
+            This order is a draft and won't show up for staff until a Cutting Master is assigned.
+            Auto Assign only picks staff with login access.
+          </p>
+          <form onSubmit={saveAssignment} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {STAFF_ROLES.map(([field, , label]) => (
+              <div key={field}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                <select className="input" value={assignment[field]} onChange={e => setAssignment(a => ({ ...a, [field]: e.target.value }))}>
+                  <option value="">Unassigned</option>
+                  {(staffByRole[field] || []).map(s => (
+                    <option key={s._id} value={s._id}>{s.name}{!s.hasLogin ? ' (no login)' : ''}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+            <div className="sm:col-span-3">
+              <button type="submit" disabled={assigning} className="btn-primary text-sm">
+                {assigning ? 'Saving…' : 'Save Assignment'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ── Checker sent this back with a remark — visible to everyone once set ── */}
+      {order.checkerRemark && !isReviewStage && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm">
+          <p className="font-semibold text-red-800 mb-1">🔁 Sent back by Checker for rework</p>
+          <p className="text-red-700 italic">{order.checkerRemark}</p>
+        </div>
+      )}
+
+      {/* ── Checker: approve or reject a stage submitted for review ── */}
+      {(isChecker || isAdmin) && isReviewStage && (
+        <div className="card space-y-3 border-2 border-dashed border-amber-300">
+          <h2 className="font-semibold text-gray-700">🔍 Review Required</h2>
+          <p className="text-sm text-gray-500">
+            {STATUS_LABELS[order.status]} — inspect the work for this stage, then approve to pass it on or reject to send it back for rework.
+          </p>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Remark (optional)</label>
+            <textarea
+              className="input text-sm" rows={2} value={remark} onChange={e => setRemark(e.target.value)}
+              placeholder="e.g. Sleeve length is off by half an inch — please redo"
+            />
+          </div>
+          <div className="flex gap-3">
+            <button type="button" disabled={reviewing} onClick={() => submitReview('approve')} className="btn-primary text-sm">
+              ✅ Approve — Pass to Next Stage
+            </button>
+            <button type="button" disabled={reviewing} onClick={() => submitReview('reject')} className="btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50">
+              ↩️ Reject — Send Back
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Customer info — admin only ── */}
       {canSeeCustomerInfo && (
@@ -169,13 +365,11 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-      {/* ── Order / Garment details — everyone sees this ── */}
+      {/* ── Order details — everyone sees this ── */}
       <div className="card space-y-3">
-        <h2 className="font-semibold text-gray-700">Garment Details</h2>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-          <p><span className="text-gray-400">Type:</span> <span className="font-medium">{order.garmentType}</span></p>
-          <p><span className="text-gray-400">Fabric:</span> {order.fabric || '—'}</p>
-          <p><span className="text-gray-400">Source:</span> {order.fabricSource?.replace(/_/g, ' ') || '—'}</p>
+        <h2 className="font-semibold text-gray-700">Order Details</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+          <p><span className="text-gray-400">Suit No:</span> {order.suitNo || '—'}</p>
           <p>
             <span className="text-gray-400">Promised:</span>{' '}
             <span className={
@@ -193,12 +387,36 @@ export default function OrderDetailPage() {
         )}
       </div>
 
+      {/* ── Items — one order can have multiple item lines ── */}
+      <div className="card space-y-3">
+        <h2 className="font-semibold text-gray-700">Items</h2>
+        <div className="space-y-2">
+          {(order.items?.length ? order.items : order.garmentType ? [order] : []).map((it, i) => (
+            <div key={i} className="bg-gray-50 rounded-lg p-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-gray-800">{it.garmentType}</span>
+                <span className="text-gray-500">Qty: {it.quantity || 1}</span>
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                Fabric: {it.fabric || '—'} · Source: {it.fabricSource?.replace(/_/g, ' ') || '—'}
+                {it.fabricAmount > 0 && ` · Fabric Amount: PKR ${it.fabricAmount.toLocaleString()}`}
+              </div>
+              {canSeePricing && (
+                <div className="text-xs text-gray-500 mt-1">
+                  PKR {it.basePrice?.toLocaleString()} × {it.quantity || 1} = <span className="font-medium">PKR {((it.basePrice || 0) * (it.quantity || 1)).toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ── Measurements — shown to cutting master, stitcher, presser, admin ── */}
       {canSeeMeasurements && (
         <div className="card space-y-3">
           <h2 className="font-semibold text-gray-700">📏 Customer Measurements (inches)</h2>
           {hasMeasurements ? (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
               {MEASUREMENT_FIELDS.map(([k, label]) => measurements[k] ? (
                 <div key={k} className="bg-gray-50 rounded-lg p-2 text-center">
                   <p className="text-xs text-gray-400">{label}</p>
@@ -220,7 +438,7 @@ export default function OrderDetailPage() {
         <div className="card space-y-3">
           <h2 className="font-semibold text-gray-700">Billing</h2>
           <div className="text-sm space-y-1">
-            <div className="flex justify-between"><span className="text-gray-400">Base Price</span><span>PKR {order.basePrice?.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-gray-400">Items Subtotal</span><span>PKR {(order.items?.reduce((s, it) => s + (it.basePrice || 0) * (it.quantity || 1) + (it.fabricAmount || 0), 0) || 0).toLocaleString()}</span></div>
             {order.rushSurcharge > 0 && <div className="flex justify-between"><span className="text-gray-400">Rush Surcharge</span><span className="text-red-500">+PKR {order.rushSurcharge?.toLocaleString()}</span></div>}
             {order.discountAmount > 0 && <div className="flex justify-between"><span className="text-gray-400">Discount</span><span className="text-green-600">-PKR {order.discountAmount?.toLocaleString()}</span></div>}
             <div className="flex justify-between font-bold border-t border-gray-100 pt-1"><span>Total</span><span>PKR {order.totalPrice?.toLocaleString()}</span></div>
@@ -241,9 +459,9 @@ export default function OrderDetailPage() {
             </div>
           )}
           {canAddPayment && order.balanceDue > 0 && (
-            <form onSubmit={addPayment} className="flex gap-2">
-              <input type="number" required className="input flex-1 text-sm" placeholder="Amount" value={payment.amount} onChange={e => setPayment({ ...payment, amount: e.target.value })} />
-              <select className="input w-32 text-sm" value={payment.method} onChange={e => setPayment({ ...payment, method: e.target.value })}>
+            <form onSubmit={addPayment} className="flex gap-2 flex-wrap">
+              <input type="number" required className="input flex-1 min-w-[120px] text-sm" placeholder="Amount" value={payment.amount} onChange={e => setPayment({ ...payment, amount: e.target.value })} />
+              <select className="input w-full sm:w-32 text-sm" value={payment.method} onChange={e => setPayment({ ...payment, method: e.target.value })}>
                 {['cash', 'card', 'bank_transfer', 'mobile_money'].map(m => <option key={m} value={m}>{m.replace(/_/g, ' ')}</option>)}
               </select>
               <button type="submit" disabled={paying} className="btn-primary text-sm px-3">Pay</button>
@@ -256,11 +474,11 @@ export default function OrderDetailPage() {
       {canSeeStaffAssignment && (
         <div className="card">
           <h2 className="font-semibold text-gray-700 mb-3">Staff Assignment</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
             {[
               ['✂️ Cutting Master', order.cuttingMaster],
               ['🧵 Stitcher', order.stitcher],
-              ['🔥 Presser', order.presser],
+              ['🔥 Press Man', order.presser],
               ['📦 Stock Manager', order.stockManager],
             ].map(([r, s]) => (
               <div key={r} className="bg-gray-50 rounded-lg p-3">
@@ -295,8 +513,8 @@ export default function OrderDetailPage() {
         <h2 className="font-semibold text-gray-700 mb-3">Status History</h2>
         <div className="space-y-2">
           {order.statusHistory?.map((h, i) => (
-            <div key={i} className="flex gap-3 text-sm items-start">
-              <span className="text-gray-400 text-xs w-32 shrink-0 mt-0.5">
+            <div key={i} className="flex flex-wrap gap-x-3 gap-y-1 text-sm items-start">
+              <span className="text-gray-400 text-xs w-28 sm:w-32 shrink-0 mt-0.5">
                 {h.changedAt ? format(new Date(h.changedAt), 'dd MMM HH:mm') : ''}
               </span>
               <span className="font-medium capitalize">{h.status?.replace(/_/g, ' ')}</span>

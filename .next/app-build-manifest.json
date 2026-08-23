@@ -1,10 +1,5 @@
 {
   "pages": {
-    "/(admin)/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(admin)/layout.js"
-    ],
     "/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -16,20 +11,25 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(admin)/dashboard/page.js"
     ],
+    "/(admin)/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(admin)/layout.js"
+    ],
+    "/(admin)/upcoming-delivery/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(admin)/upcoming-delivery/page.js"
+    ],
     "/(admin)/orders/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(admin)/orders/page.js"
     ],
-    "/(admin)/orders/new/page": [
+    "/not-found": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(admin)/orders/new/page.js"
-    ],
-    "/(admin)/orders/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(admin)/orders/[id]/page.js"
+      "static/chunks/app/not-found.js"
     ]
   }
 }
