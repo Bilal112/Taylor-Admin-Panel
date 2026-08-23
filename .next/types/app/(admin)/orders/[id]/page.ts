@@ -1,4 +1,4 @@
-// File: /Users/mac/Library/Application Support/Claude/local-agent-mode-sessions/20f20b1c-e99c-42c0-99ab-f73e25c6e31f/4cad5ef6-155c-4ff1-b937-94f23ff5a3d9/local_7119a08f-a147-4f04-8602-83ab4063d09a/outputs/hafiz-tailor/frontend/src/app/(admin)/orders/[id]/page.js
+// File: /Users/mac/Documents/Github/hafiz_taylor_system/frontend/src/app/(admin)/orders/[id]/page.js
 import * as entry from '../../../../../../src/app/(admin)/orders/[id]/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
