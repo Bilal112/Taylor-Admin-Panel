@@ -263,11 +263,11 @@ export default function NewOrderPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">New Order</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">New Order</h1>
 
       {/* ── Step 1: Phone lookup ── */}
       <div className="card space-y-4">
-        <h2 className="font-semibold text-gray-700">Step 1 — Customer</h2>
+        <h2 className="font-semibold text-gray-700 dark:text-gray-300">Step 1 — Customer</h2>
         <div className="flex gap-2 flex-wrap">
           <input
             className="input flex-1 min-w-[160px]"
@@ -290,17 +290,17 @@ export default function NewOrderPage() {
 
         {/* Found customer */}
         {customerStatus === "found" && customer && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+          <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-900 rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-green-800">
+                <p className="font-semibold text-green-800 dark:text-green-300">
                   ✅ {customer.name}
                 </p>
-                <p className="text-sm text-green-600">{customer.phone}</p>
+                <p className="text-sm text-green-600 dark:text-green-400">{customer.phone}</p>
               </div>
               <button
                 onClick={() => setCustomerStatus("")}
-                className="text-xs text-gray-400 hover:text-gray-600"
+                className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 Change
               </button>
@@ -310,13 +310,13 @@ export default function NewOrderPage() {
             {customer.measurements &&
               Object.keys(customer.measurements).length > 0 && (
                 <div className="mt-2">
-                  <p className="text-xs font-medium text-green-700 mb-2">
+                  <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-2">
                     📏 Saved Measurements (inches) — update if changed:
                   </p>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {MEASUREMENT_FIELDS.map(([k, l]) => (
                       <div key={k}>
-                        <label className="block text-xs text-gray-500 mb-1">
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
                           {l}
                         </label>
                         <input
@@ -347,9 +347,9 @@ export default function NewOrderPage() {
                     {customer.measurementHistory.map((h, i) => (
                       <div
                         key={i}
-                        className="bg-white border border-gray-100 rounded p-2 text-xs text-gray-600"
+                        className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded p-2 text-xs text-gray-600 dark:text-gray-400"
                       >
-                        <p className="font-medium text-gray-700 mb-1">
+                        <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">
                           {h.takenAt
                             ? new Date(h.takenAt).toLocaleDateString()
                             : "Unknown date"}
@@ -376,12 +376,12 @@ export default function NewOrderPage() {
 
         {/* New customer */}
         {customerStatus === "new" && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-            <p className="text-sm font-medium text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg p-4 space-y-3">
+            <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
               👤 New customer — will be created
             </p>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                 Customer Name *
               </label>
               <input
@@ -391,13 +391,13 @@ export default function NewOrderPage() {
                 placeholder="Full name"
               />
             </div>
-            <p className="text-xs font-medium text-gray-600 mb-1">
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
               Measurements (inches) — optional but recommended:
             </p>
             <div className="grid grid-cols-5 gap-2">
               {MEASUREMENT_FIELDS.map(([k, l]) => (
                 <div key={k}>
-                  <label className="block text-xs text-gray-500 mb-1">
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
                     {l}
                   </label>
                   <input
@@ -417,13 +417,13 @@ export default function NewOrderPage() {
       {/* ── Step 2: Order details ── */}
       {customerStatus && (
         <form onSubmit={handleSubmit} className="card space-y-4">
-          <h2 className="font-semibold text-gray-700">
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
             Step 2 — Order Details
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Suit No
               </label>
               <input
@@ -432,12 +432,12 @@ export default function NewOrderPage() {
                 onChange={(e) => set("suitNo", e.target.value)}
                 placeholder="Shop's serial number for this order"
               />
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                 One serial for this whole order/customer visit.
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Promised Date *
               </label>
               <input
@@ -452,9 +452,9 @@ export default function NewOrderPage() {
           </div>
 
           {/* ── Item lines — multiple items per order ── */}
-          <hr className="border-gray-100" />
+          <hr className="border-gray-100 dark:border-gray-800" />
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-700">Items</h3>
+            <h3 className="font-semibold text-gray-700 dark:text-gray-300">Items</h3>
             <button
               type="button"
               onClick={addItem}
@@ -468,17 +468,17 @@ export default function NewOrderPage() {
             {items.map((it, idx) => (
               <div
                 key={idx}
-                className="border border-gray-200 rounded-lg p-3 space-y-3 relative"
+                className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3 relative"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-400">
+                  <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">
                     Item {idx + 1}
                   </span>
                   {items.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeItem(idx)}
-                      className="text-xs text-red-500 hover:underline"
+                      className="text-xs text-red-500 dark:text-red-400 hover:underline"
                     >
                       Remove
                     </button>
@@ -486,7 +486,7 @@ export default function NewOrderPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                       Item Type *
                     </label>
                     <select
@@ -506,7 +506,7 @@ export default function NewOrderPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                       Quantity *
                     </label>
                     <input
@@ -519,7 +519,7 @@ export default function NewOrderPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                       Price per Unit (PKR) *
                     </label>
                     <input
@@ -534,7 +534,7 @@ export default function NewOrderPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                       Fabric
                     </label>
                     <input
@@ -545,7 +545,7 @@ export default function NewOrderPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                       Fabric Source
                     </label>
                     <select
@@ -562,7 +562,7 @@ export default function NewOrderPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                       Fabric Amount (PKR)
                     </label>
                     <input
@@ -576,9 +576,9 @@ export default function NewOrderPage() {
                     />
                   </div>
                 </div>
-                <div className="text-right text-xs text-gray-500">
+                <div className="text-right text-xs text-gray-500 dark:text-gray-400">
                   Line total:{" "}
-                  <span className="font-semibold text-gray-700">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">
                     PKR {itemLineTotal(it).toLocaleString()}
                   </span>
                 </div>
@@ -587,7 +587,7 @@ export default function NewOrderPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Style Notes
             </label>
             <textarea
@@ -599,12 +599,12 @@ export default function NewOrderPage() {
             />
           </div>
 
-          <hr className="border-gray-100" />
-          <h3 className="font-semibold text-gray-700">Billing</h3>
+          <hr className="border-gray-100 dark:border-gray-800" />
+          <h3 className="font-semibold text-gray-700 dark:text-gray-300">Billing</h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Advance Payment (PKR)
               </label>
               <input
@@ -623,7 +623,7 @@ export default function NewOrderPage() {
                   onChange={(e) => set("isRush", e.target.checked)}
                   className="w-4 h-4 text-primary"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Rush Order
                 </span>
               </label>
@@ -640,8 +640,8 @@ export default function NewOrderPage() {
           )}
 
           {/* Live total preview */}
-          <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
-            <div className="flex justify-between text-gray-500">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm space-y-1">
+            <div className="flex justify-between text-gray-500 dark:text-gray-400">
               <span>
                 Items Subtotal ({items.length}{" "}
                 {items.length === 1 ? "line" : "lines"})
@@ -649,29 +649,29 @@ export default function NewOrderPage() {
               <span>PKR {itemsSubtotal.toLocaleString()}</span>
             </div>
             {rushAmount > 0 && (
-              <div className="flex justify-between text-gray-500">
+              <div className="flex justify-between text-gray-500 dark:text-gray-400">
                 <span>Rush Surcharge</span>
                 <span>PKR {rushAmount.toLocaleString()}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-gray-800 border-t border-gray-200 pt-1">
+            <div className="flex justify-between font-bold text-gray-800 dark:text-gray-200 border-t border-gray-200 dark:border-gray-700 pt-1">
               <span>Estimated Total</span>
               <span>PKR {estimatedTotal.toLocaleString()}</span>
             </div>
           </div>
 
-          <hr className="border-gray-100" />
-          <h3 className="font-semibold text-gray-700">
+          <hr className="border-gray-100 dark:border-gray-800" />
+          <h3 className="font-semibold text-gray-700 dark:text-gray-300">
             Staff Assignment (optional)
           </h3>
-          <p className="text-xs text-gray-400 -mt-2">
+          <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
             Leave all three blank to save this order as a draft — you can assign
             staff later from the order page.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {STAFF_ROLES.map(([field, , label]) => (
               <div key={field}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {label}
                 </label>
                 <select

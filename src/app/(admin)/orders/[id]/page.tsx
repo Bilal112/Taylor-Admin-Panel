@@ -29,19 +29,19 @@ const STATUS_FLOW: OrderStatus[] = [
 ];
 
 const STATUS_COLORS: Partial<Record<OrderStatus, string>> = {
-  draft: "bg-slate-100 text-slate-600",
-  received: "bg-blue-100 text-blue-800",
-  cutting: "bg-yellow-100 text-yellow-800",
-  cutting_review: "bg-amber-100 text-amber-800",
-  stitching: "bg-purple-100 text-purple-800",
-  stitching_review: "bg-amber-100 text-amber-800",
-  pressing: "bg-orange-100 text-orange-800",
-  pressing_review: "bg-amber-100 text-amber-800",
-  quality_check: "bg-cyan-100 text-cyan-800",
-  ready: "bg-green-100 text-green-800",
-  delivered: "bg-gray-100 text-gray-700",
-  rework: "bg-red-100 text-red-800",
-  cancelled: "bg-gray-200 text-gray-500",
+  draft: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+  received: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+  cutting: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+  cutting_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  stitching: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  stitching_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  pressing: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
+  pressing_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  quality_check: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300",
+  ready: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  delivered: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  rework: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+  cancelled: "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
 
 const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
@@ -295,7 +295,7 @@ export default function OrderDetailPage() {
     );
   if (!order)
     return (
-      <div className="text-center text-gray-400 py-20">
+      <div className="text-center text-gray-400 dark:text-gray-500 py-20">
         Order not found or not assigned to you
       </div>
     );
@@ -342,25 +342,25 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-mono break-all">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 font-mono break-all">
             {order.orderNumber}
           </h1>
           <div className="flex gap-2 mt-1 flex-wrap">
             <span
-              className={`badge ${STATUS_COLORS[order.status] || "bg-gray-100"}`}
+              className={`badge ${STATUS_COLORS[order.status] || "bg-gray-100 dark:bg-gray-800"}`}
             >
               {STATUS_LABELS[order.status] || order.status?.replace(/_/g, " ")}
             </span>
             {order.isRush && (
-              <span className="badge bg-red-500 text-white">RUSH</span>
+              <span className="badge bg-red-500 dark:bg-red-600 text-white">RUSH</span>
             )}
             {order.isPickedUp && (
-              <span className="badge bg-green-100 text-green-700">
+              <span className="badge bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
                 Picked Up ✓
               </span>
             )}
             {order.rackNumber && (
-              <span className="badge bg-blue-600 text-white text-base font-bold px-3 py-1">
+              <span className="badge bg-blue-600 dark:bg-blue-700 text-white text-base font-bold px-3 py-1">
                 📦 Rack {order.rackNumber}
               </span>
             )}
@@ -404,7 +404,7 @@ export default function OrderDetailPage() {
         </div>
       </div>
       {nextStatus === "ready" && (
-        <p className="text-xs text-gray-400 -mt-4">
+        <p className="text-xs text-gray-400 dark:text-gray-500 -mt-4">
           A rack number is required to mark this order as Ready.
         </p>
       )}
@@ -419,10 +419,10 @@ export default function OrderDetailPage() {
                 className="flex flex-col items-center gap-1 shrink-0"
               >
                 <div
-                  className={`h-2 w-10 rounded-full transition-colors ${i <= currentIdx ? "bg-primary" : "bg-gray-200"}`}
+                  className={`h-2 w-10 rounded-full transition-colors ${i <= currentIdx ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"}`}
                 />
                 <span
-                  className="hidden lg:block text-gray-400 text-center capitalize"
+                  className="hidden lg:block text-gray-400 dark:text-gray-500 text-center capitalize"
                   style={{ fontSize: "10px" }}
                 >
                   {s.replace(/_/g, " ")}
@@ -437,7 +437,7 @@ export default function OrderDetailPage() {
       {isAdmin && order.status === "draft" && (
         <div className="card space-y-4 border-2 border-dashed border-primary/30">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-700">
+            <h2 className="font-semibold text-gray-700 dark:text-gray-300">
               📝 Assign Staff to Activate
             </h2>
             <button
@@ -449,7 +449,7 @@ export default function OrderDetailPage() {
               {autoAssigning ? "Assigning…" : "⚡ Auto Assign"}
             </button>
           </div>
-          <p className="text-xs text-gray-400 -mt-2">
+          <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
             This order is a draft and won't show up for staff until a Cutting
             Master is assigned. Auto Assign only picks staff with login access.
           </p>
@@ -459,7 +459,7 @@ export default function OrderDetailPage() {
           >
             {STAFF_ROLES.map(([field, , label]) => (
               <div key={field}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {label}
                 </label>
                 <select
@@ -494,24 +494,24 @@ export default function OrderDetailPage() {
 
       {/* ── Checker sent this back with a remark — visible to everyone once set ── */}
       {order.checkerRemark && !isReviewStage && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm">
-          <p className="font-semibold text-red-800 mb-1">
+        <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg p-4 text-sm">
+          <p className="font-semibold text-red-800 dark:text-red-300 mb-1">
             🔁 Sent back by Checker for rework
           </p>
-          <p className="text-red-700 italic">{order.checkerRemark}</p>
+          <p className="text-red-700 dark:text-red-400 italic">{order.checkerRemark}</p>
         </div>
       )}
 
       {/* ── Checker: approve or reject a stage submitted for review ── */}
       {(isChecker || isAdmin) && isReviewStage && (
-        <div className="card space-y-3 border-2 border-dashed border-amber-300">
-          <h2 className="font-semibold text-gray-700">🔍 Review Required</h2>
-          <p className="text-sm text-gray-500">
+        <div className="card space-y-3 border-2 border-dashed border-amber-300 dark:border-amber-700">
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">🔍 Review Required</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {STATUS_LABELS[order.status]} — inspect the work for this stage,
             then approve to pass it on or reject to send it back for rework.
           </p>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
               Remark (optional)
             </label>
             <textarea
@@ -535,7 +535,7 @@ export default function OrderDetailPage() {
               type="button"
               disabled={reviewing}
               onClick={() => submitReview("reject")}
-              className="btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50"
+              className="btn-secondary text-sm text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/40"
             >
               ↩️ Reject — Send Back
             </button>
@@ -546,14 +546,14 @@ export default function OrderDetailPage() {
       {/* ── Customer info — admin only ── */}
       {canSeeCustomerInfo && (
         <div className="card space-y-3">
-          <h2 className="font-semibold text-gray-700">Customer</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">Customer</h2>
           <div>
-            <p className="font-medium">{orderCustomer?.name}</p>
-            <p className="text-sm text-gray-400">
+            <p className="font-medium text-gray-900 dark:text-gray-100">{orderCustomer?.name}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">
               {orderCustomer && "phone" in orderCustomer ? String(orderCustomer.phone ?? "") : ""}
             </p>
             {orderCustomer && "address" in orderCustomer && (orderCustomer as { address?: string }).address && (
-              <p className="text-sm text-gray-400">{(orderCustomer as { address?: string }).address}</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">{(orderCustomer as { address?: string }).address}</p>
             )}
           </div>
         </div>
@@ -561,20 +561,20 @@ export default function OrderDetailPage() {
 
       {/* ── Order details — everyone sees this ── */}
       <div className="card space-y-3">
-        <h2 className="font-semibold text-gray-700">Order Details</h2>
+        <h2 className="font-semibold text-gray-700 dark:text-gray-300">Order Details</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
           <p>
-            <span className="text-gray-400">Suit No:</span>{" "}
+            <span className="text-gray-400 dark:text-gray-500">Suit No:</span>{" "}
             {order.suitNo || "—"}
           </p>
           <p>
-            <span className="text-gray-400">Promised:</span>{" "}
+            <span className="text-gray-400 dark:text-gray-500">Promised:</span>{" "}
             <span
               className={
                 order.promisedDate &&
                 new Date(order.promisedDate) < new Date() &&
                 order.status !== "delivered"
-                  ? "text-red-600 font-semibold"
+                  ? "text-red-600 dark:text-red-400 font-semibold"
                   : "font-medium"
               }
             >
@@ -585,7 +585,7 @@ export default function OrderDetailPage() {
           </p>
         </div>
         {order.styleNotes && (
-          <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-3 text-sm text-gray-700 italic">
+          <div className="bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-100 dark:border-yellow-900 rounded-lg p-3 text-sm text-gray-700 dark:text-gray-300 italic">
             📝 {order.styleNotes}
           </div>
         )}
@@ -593,24 +593,24 @@ export default function OrderDetailPage() {
 
       {/* ── Items — one order can have multiple item lines ── */}
       <div className="card space-y-3">
-        <h2 className="font-semibold text-gray-700">Items</h2>
+        <h2 className="font-semibold text-gray-700 dark:text-gray-300">Items</h2>
         <div className="space-y-2">
           {(order.items || []).map((it, i) => (
-            <div key={i} className="bg-gray-50 rounded-lg p-3 text-sm">
+            <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-800">
+                <span className="font-medium text-gray-800 dark:text-gray-200">
                   {it.garmentType}
                 </span>
-                <span className="text-gray-500">Qty: {it.quantity || 1}</span>
+                <span className="text-gray-500 dark:text-gray-400">Qty: {it.quantity || 1}</span>
               </div>
-              <div className="text-xs text-gray-400 mt-1">
+              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                 Fabric: {it.fabric || "—"} · Source:{" "}
                 {it.fabricSource?.replace(/_/g, " ") || "—"}
                 {it.fabricAmount > 0 &&
                   ` · Fabric Amount: PKR ${it.fabricAmount.toLocaleString()}`}
               </div>
               {canSeePricing && (
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   PKR {it.basePrice?.toLocaleString()} × {it.quantity || 1} ={" "}
                   <span className="font-medium">
                     PKR{" "}
@@ -628,7 +628,7 @@ export default function OrderDetailPage() {
       {/* ── Measurements — shown to cutting master, stitcher, presser, admin ── */}
       {canSeeMeasurements && (
         <div className="card space-y-3">
-          <h2 className="font-semibold text-gray-700">
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
             📏 Customer Measurements (inches)
           </h2>
           {hasMeasurements && measurements ? (
@@ -637,10 +637,10 @@ export default function OrderDetailPage() {
                 measurements[k] ? (
                   <div
                     key={k}
-                    className="bg-gray-50 rounded-lg p-2 text-center"
+                    className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center"
                   >
-                    <p className="text-xs text-gray-400">{label}</p>
-                    <p className="font-bold text-gray-800">
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{label}</p>
+                    <p className="font-bold text-gray-800 dark:text-gray-200">
                       {String(measurements[k])}"
                     </p>
                   </div>
@@ -648,12 +648,12 @@ export default function OrderDetailPage() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 italic">
+            <p className="text-sm text-gray-400 dark:text-gray-500 italic">
               No measurements recorded for this customer.
             </p>
           )}
           {measurements?.notes && (
-            <p className="text-sm text-gray-600 bg-gray-50 rounded p-2">
+            <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded p-2">
               📝 {measurements.notes}
             </p>
           )}
@@ -663,10 +663,10 @@ export default function OrderDetailPage() {
       {/* ── Billing — admin only ── */}
       {canSeePricing && (
         <div className="card space-y-3">
-          <h2 className="font-semibold text-gray-700">Billing</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">Billing</h2>
           <div className="text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-gray-400">Items Subtotal</span>
+              <span className="text-gray-400 dark:text-gray-500">Items Subtotal</span>
               <span>
                 PKR{" "}
                 {(
@@ -682,27 +682,27 @@ export default function OrderDetailPage() {
             </div>
             {!!order.rushSurcharge && order.rushSurcharge > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-400">Rush Surcharge</span>
-                <span className="text-red-500">
+                <span className="text-gray-400 dark:text-gray-500">Rush Surcharge</span>
+                <span className="text-red-500 dark:text-red-400">
                   +PKR {order.rushSurcharge?.toLocaleString()}
                 </span>
               </div>
             )}
             {!!order.discountAmount && order.discountAmount > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-400">Discount</span>
-                <span className="text-green-600">
+                <span className="text-gray-400 dark:text-gray-500">Discount</span>
+                <span className="text-green-600 dark:text-green-400">
                   -PKR {order.discountAmount?.toLocaleString()}
                 </span>
               </div>
             )}
-            <div className="flex justify-between font-bold border-t border-gray-100 pt-1">
+            <div className="flex justify-between font-bold border-t border-gray-100 dark:border-gray-800 pt-1">
               <span>Total</span>
               <span>PKR {order.totalPrice?.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">Paid</span>
-              <span className="text-green-600">
+              <span className="text-gray-400 dark:text-gray-500">Paid</span>
+              <span className="text-green-600 dark:text-green-400">
                 PKR {order.amountPaid?.toLocaleString()}
               </span>
             </div>
@@ -710,7 +710,7 @@ export default function OrderDetailPage() {
               <span>Balance Due</span>
               <span
                 className={
-                  order.balanceDue > 0 ? "text-red-600" : "text-green-600"
+                  order.balanceDue > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
                 }
               >
                 PKR {order.balanceDue?.toLocaleString()}
@@ -718,9 +718,9 @@ export default function OrderDetailPage() {
             </div>
           </div>
           {order.payments?.length > 0 && (
-            <div className="text-xs space-y-1 bg-gray-50 rounded p-2">
+            <div className="text-xs space-y-1 bg-gray-50 dark:bg-gray-800 rounded p-2">
               {order.payments.map((p, i) => (
-                <div key={i} className="flex justify-between text-gray-500">
+                <div key={i} className="flex justify-between text-gray-500 dark:text-gray-400">
                   <span>{p.method?.replace(/_/g, " ")}</span>
                   <span>PKR {p.amount?.toLocaleString()}</span>
                 </div>
@@ -767,7 +767,7 @@ export default function OrderDetailPage() {
       {/* ── Staff Assignment — admin only ── */}
       {canSeeStaffAssignment && (
         <div className="card">
-          <h2 className="font-semibold text-gray-700 mb-3">Staff Assignment</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Staff Assignment</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
             {(
               [
@@ -777,11 +777,11 @@ export default function OrderDetailPage() {
                 ["📦 Stock Manager", order.stockManager],
               ] as [string, Order["cuttingMaster"]][]
             ).map(([r, s]) => (
-              <div key={r} className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-400 mb-1">{r}</p>
+              <div key={r} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{r}</p>
                 <p className="font-medium">
                   {(typeof s === "object" && s?.name) || (
-                    <span className="text-gray-300 text-xs">Unassigned</span>
+                    <span className="text-gray-300 dark:text-gray-600 text-xs">Unassigned</span>
                   )}
                 </p>
               </div>
@@ -792,14 +792,14 @@ export default function OrderDetailPage() {
 
       {/* ── Status History — everyone sees ── */}
       <div className="card">
-        <h2 className="font-semibold text-gray-700 mb-3">Status History</h2>
+        <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Status History</h2>
         <div className="space-y-2">
           {order.statusHistory?.map((h, i) => (
             <div
               key={i}
               className="flex flex-wrap gap-x-3 gap-y-1 text-sm items-start"
             >
-              <span className="text-gray-400 text-xs w-28 sm:w-32 shrink-0 mt-0.5">
+              <span className="text-gray-400 dark:text-gray-500 text-xs w-28 sm:w-32 shrink-0 mt-0.5">
                 {h.changedAt
                   ? format(new Date(h.changedAt), "dd MMM HH:mm")
                   : ""}
@@ -809,12 +809,12 @@ export default function OrderDetailPage() {
               </span>
               {/* Only show who changed it to admin */}
               {isAdmin && (
-                <span className="text-gray-400 text-xs">
+                <span className="text-gray-400 dark:text-gray-500 text-xs">
                   {(typeof h.changedBy === "object" && h.changedBy?.name) || ""}
                 </span>
               )}
               {h.note && (
-                <span className="text-gray-400 italic text-xs">{h.note}</span>
+                <span className="text-gray-400 dark:text-gray-500 italic text-xs">{h.note}</span>
               )}
             </div>
           ))}

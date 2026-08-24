@@ -27,24 +27,24 @@ const StatCard = ({ label, value, icon, color = "text-primary" }: StatCardProps)
   <div className="card flex items-center gap-4">
     <div className="text-3xl">{icon}</div>
     <div>
-      <p className="text-sm text-gray-500">{label}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
       <p className={`text-2xl font-bold ${color}`}>{value ?? "—"}</p>
     </div>
   </div>
 );
 
 const STATUS_COLORS: Partial<Record<OrderStatus, string>> = {
-  draft: "bg-slate-100 text-slate-600",
-  received: "bg-blue-100 text-blue-800",
-  cutting: "bg-yellow-100 text-yellow-800",
-  cutting_review: "bg-amber-100 text-amber-800",
-  stitching: "bg-purple-100 text-purple-800",
-  stitching_review: "bg-amber-100 text-amber-800",
-  pressing: "bg-orange-100 text-orange-800",
-  pressing_review: "bg-amber-100 text-amber-800",
-  ready: "bg-green-100 text-green-800",
-  delivered: "bg-gray-100 text-gray-800",
-  rework: "bg-red-100 text-red-800",
+  draft: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+  received: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+  cutting: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+  cutting_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  stitching: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  stitching_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  pressing: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
+  pressing_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  ready: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  delivered: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+  rework: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
 };
 
 const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
@@ -103,13 +103,13 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
 
       {/* Due tomorrow alert — visible to admin and checker */}
       {!!stats?.dueTomorrowCount && stats.dueTomorrowCount > 0 && (
-        <div className="card border-l-4 border-red-500 bg-red-50">
+        <div className="card border-l-4 border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-950/40">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-red-800 flex items-center gap-2 text-sm sm:text-base">
+            <h2 className="font-semibold text-red-800 dark:text-red-300 flex items-center gap-2 text-sm sm:text-base">
               <span>⏰</span> Due Tomorrow — Not Ready Yet (
               {stats.dueTomorrowCount})
             </h2>
@@ -119,24 +119,24 @@ export default function DashboardPage() {
               <Link
                 key={o._id}
                 href={`/orders/${o._id}`}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 bg-white rounded-lg px-3 py-2 border border-red-100 hover:border-red-300 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 bg-white dark:bg-gray-900 rounded-lg px-3 py-2 border border-red-100 dark:border-red-900 hover:border-red-300 dark:hover:border-red-700 transition-colors"
               >
                 <div className="min-w-0">
                   <span className="font-mono font-medium text-primary text-sm">
                     {o.orderNumber}
                   </span>
-                  <span className="text-gray-500 text-sm ml-2">
+                  <span className="text-gray-500 dark:text-gray-400 text-sm ml-2">
                     {o.items?.map((it) => it.garmentType).join(", ") ||
                       o.garmentType}
                   </span>
                   {isAdmin && o.customer?.name && (
-                    <span className="text-gray-400 text-xs ml-2">
+                    <span className="text-gray-400 dark:text-gray-500 text-xs ml-2">
                       · {o.customer.name}
                     </span>
                   )}
                 </div>
                 <span
-                  className={`badge shrink-0 ${STATUS_COLORS[o.status] || "bg-gray-100 text-gray-700"}`}
+                  className={`badge shrink-0 ${STATUS_COLORS[o.status] || "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"}`}
                 >
                   {STATUS_LABELS[o.status] || o.status?.replace(/_/g, " ")}
                 </span>
@@ -198,16 +198,16 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status breakdown */}
         <div className="card">
-          <h2 className="font-semibold text-gray-700 mb-4">Orders by Status</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-4">Orders by Status</h2>
           <div className="space-y-2">
             {stats?.statusBreakdown?.map((s) => (
               <div key={s._id} className="flex items-center justify-between">
                 <span
-                  className={`badge ${STATUS_COLORS[s._id] || "bg-gray-100 text-gray-700"}`}
+                  className={`badge ${STATUS_COLORS[s._id] || "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"}`}
                 >
                   {STATUS_LABELS[s._id] || s._id?.replace(/_/g, " ")}
                 </span>
-                <span className="font-semibold text-gray-800">{s.count}</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200">{s.count}</span>
               </div>
             ))}
           </div>
@@ -215,7 +215,7 @@ export default function DashboardPage() {
 
         {/* Last 7 days chart */}
         <div className="card">
-          <h2 className="font-semibold text-gray-700 mb-4">
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-4">
             Orders — Last 7 Days
           </h2>
           <ResponsiveContainer width="100%" height={200}>

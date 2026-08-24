@@ -10,19 +10,19 @@ import type { Order, OrderStatus } from "@/types/order";
 import type { Pagination } from "@/types/api";
 
 const STATUS_COLORS: Partial<Record<OrderStatus, string>> = {
-  draft: "bg-slate-100 text-slate-600",
-  received: "bg-blue-100 text-blue-800",
-  cutting: "bg-yellow-100 text-yellow-800",
-  cutting_review: "bg-amber-100 text-amber-800",
-  stitching: "bg-purple-100 text-purple-800",
-  stitching_review: "bg-amber-100 text-amber-800",
-  pressing: "bg-orange-100 text-orange-800",
-  pressing_review: "bg-amber-100 text-amber-800",
-  quality_check: "bg-cyan-100 text-cyan-800",
-  ready: "bg-green-100 text-green-800",
-  delivered: "bg-gray-100 text-gray-700",
-  rework: "bg-red-100 text-red-800",
-  cancelled: "bg-gray-200 text-gray-500",
+  draft: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+  received: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+  cutting: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+  cutting_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  stitching: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  stitching_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  pressing: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
+  pressing_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  quality_check: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300",
+  ready: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  delivered: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  rework: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+  cancelled: "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
 
 const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
@@ -111,7 +111,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Orders</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Orders</h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => fetchOrders({ silent: true })}
@@ -167,7 +167,7 @@ export default function OrdersPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : orders.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400">
+        <div className="card text-center py-12 text-gray-400 dark:text-gray-500">
           No orders found
         </div>
       ) : (
@@ -183,7 +183,7 @@ export default function OrdersPage() {
                   href={`/orders/${order._id}`}
                   className={clsx(
                     "card block space-y-2",
-                    dueTomorrow && "bg-red-50 border-red-200",
+                    dueTomorrow && "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900",
                   )}
                 >
                   <div className="flex items-center justify-between flex-wrap gap-1">
@@ -191,7 +191,7 @@ export default function OrdersPage() {
                       {order.orderNumber}
                     </span>
                     <span
-                      className={`badge ${STATUS_COLORS[order.status] || "bg-gray-100"}`}
+                      className={`badge ${STATUS_COLORS[order.status] || "bg-gray-100 dark:bg-gray-800"}`}
                     >
                       {STATUS_LABELS[order.status] ||
                         order.status?.replace(/_/g, " ")}
@@ -204,17 +204,17 @@ export default function OrdersPage() {
                       </span>
                     )}
                     {dueTomorrow && (
-                      <span className="badge bg-red-100 text-red-700 text-xs">
+                      <span className="badge bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-xs">
                         ⏰ Due Tomorrow
                       </span>
                     )}
                     {order.status === "ready" && order.rackNumber && (
-                      <span className="badge bg-blue-600 text-white text-xs">
+                      <span className="badge bg-blue-600 dark:bg-blue-700 text-white text-xs">
                         📦 Rack {order.rackNumber}
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
                     {(order.items || [])
                       .map(
                         (it) =>
@@ -223,23 +223,23 @@ export default function OrdersPage() {
                       .join(", ")}
                   </div>
                   {order.suitNo && (
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-400 dark:text-gray-500">
                       Suit No: {order.suitNo}
                     </div>
                   )}
                   {canSeeCustomer && customer?.name && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       {customer.name} · {"phone" in customer ? customer.phone : ""}
                     </div>
                   )}
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-50">
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-50 dark:border-gray-800">
                     <span
                       className={
                         order.promisedDate &&
                         new Date(order.promisedDate) < new Date() &&
                         order.status !== "delivered"
-                          ? "text-red-600 font-medium"
-                          : "text-gray-500"
+                          ? "text-red-600 dark:text-red-400 font-medium"
+                          : "text-gray-500 dark:text-gray-400"
                       }
                     >
                       {order.promisedDate
@@ -250,8 +250,8 @@ export default function OrdersPage() {
                       <span
                         className={
                           order.balanceDue > 0
-                            ? "text-red-600 font-medium"
-                            : "text-green-600 font-medium"
+                            ? "text-red-600 dark:text-red-400 font-medium"
+                            : "text-green-600 dark:text-green-400 font-medium"
                         }
                       >
                         PKR {order.balanceDue?.toLocaleString()}
@@ -264,22 +264,22 @@ export default function OrdersPage() {
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden md:block bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
                   <tr>
                     {columns.map((col) => (
                       <th
                         key={col.key}
-                        className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                        className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
                       >
                         {col.label}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                   {orders.map((order) => {
                     const dueTomorrow = isDueTomorrowNotReady(order);
                     const customer = typeof order.customer === "object" ? order.customer : null;
@@ -287,8 +287,8 @@ export default function OrdersPage() {
                       <tr
                         key={order._id}
                         className={clsx(
-                          "hover:bg-gray-50 transition-colors",
-                          dueTomorrow && "bg-red-50 hover:bg-red-100",
+                          "hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
+                          dueTomorrow && "bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40",
                         )}
                       >
                         {/* Order # — always shown, truncated to keep the column narrow */}
@@ -301,17 +301,17 @@ export default function OrdersPage() {
                               {order.orderNumber}
                             </span>
                             {order.isRush && (
-                              <span className="badge bg-red-500 text-white text-xs shrink-0">
+                              <span className="badge bg-red-500 dark:bg-red-600 text-white text-xs shrink-0">
                                 RUSH
                               </span>
                             )}
                             {dueTomorrow && (
-                              <span className="badge bg-red-100 text-red-700 text-xs shrink-0">
+                              <span className="badge bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-xs shrink-0">
                                 ⏰
                               </span>
                             )}
                             {order.status === "ready" && order.rackNumber && (
-                              <span className="badge bg-blue-600 text-white text-xs shrink-0">
+                              <span className="badge bg-blue-600 dark:bg-blue-700 text-white text-xs shrink-0">
                                 📦 {order.rackNumber}
                               </span>
                             )}
@@ -321,17 +321,17 @@ export default function OrdersPage() {
                         {/* Customer — admin only */}
                         {canSeeCustomer && (
                           <td className="px-4 py-3">
-                            <div className="font-medium">
+                            <div className="font-medium text-gray-900 dark:text-gray-100">
                               {customer?.name}
                             </div>
-                            <div className="text-xs text-gray-400">
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
                               {customer && "phone" in customer ? customer.phone : ""}
                             </div>
                           </td>
                         )}
 
                         {/* Items — always shown */}
-                        <td className="px-4 py-3 text-gray-700">
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           <div>
                             {(order.items || [])
                               .map(
@@ -341,7 +341,7 @@ export default function OrdersPage() {
                               .join(", ")}
                           </div>
                           {order.suitNo && (
-                            <div className="text-xs text-gray-400">
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
                               Suit No: {order.suitNo}
                             </div>
                           )}
@@ -350,7 +350,7 @@ export default function OrdersPage() {
                         {/* Status — always shown */}
                         <td className="px-4 py-3">
                           <span
-                            className={`badge ${STATUS_COLORS[order.status] || "bg-gray-100"}`}
+                            className={`badge ${STATUS_COLORS[order.status] || "bg-gray-100 dark:bg-gray-800"}`}
                           >
                             {STATUS_LABELS[order.status] ||
                               order.status?.replace(/_/g, " ")}
@@ -364,8 +364,8 @@ export default function OrdersPage() {
                               order.promisedDate &&
                               new Date(order.promisedDate) < new Date() &&
                               order.status !== "delivered"
-                                ? "text-red-600 font-medium"
-                                : "text-gray-700"
+                                ? "text-red-600 dark:text-red-400 font-medium"
+                                : "text-gray-700 dark:text-gray-300"
                             }
                           >
                             {order.promisedDate
@@ -383,8 +383,8 @@ export default function OrdersPage() {
                             <span
                               className={
                                 order.balanceDue > 0
-                                  ? "text-red-600"
-                                  : "text-green-600"
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-green-600 dark:text-green-400"
                               }
                             >
                               PKR {order.balanceDue?.toLocaleString()}
@@ -409,8 +409,8 @@ export default function OrdersPage() {
             </div>
 
             {!!pagination.pages && pagination.pages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50">
-                <span className="text-sm text-gray-500">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   Page {pagination.page} of {pagination.pages} (
                   {pagination.total} total)
                 </span>
@@ -437,7 +437,7 @@ export default function OrdersPage() {
           {/* Mobile pagination */}
           {!!pagination.pages && pagination.pages > 1 && (
             <div className="md:hidden flex items-center justify-between px-1">
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 Page {pagination.page} of {pagination.pages} ({pagination.total}{" "}
                 total)
               </span>

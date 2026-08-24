@@ -53,7 +53,7 @@ export default function BranchesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
           Branches
         </h1>
         <button
@@ -66,11 +66,11 @@ export default function BranchesPage() {
 
       {showForm && (
         <form onSubmit={handleCreate} className="card space-y-4">
-          <h2 className="font-semibold text-gray-700">New Branch</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">New Branch</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {FORM_FIELDS.map(([k, l, req]) => (
               <div key={k} className={k === "address" ? "sm:col-span-2" : ""}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {l} {req && "*"}
                 </label>
                 <input
@@ -99,11 +99,11 @@ export default function BranchesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
-          <div className="col-span-full text-center py-12 text-gray-400">
+          <div className="col-span-full text-center py-12 text-gray-400 dark:text-gray-500">
             Loading…
           </div>
         ) : branches.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-400">
+          <div className="col-span-full text-center py-12 text-gray-400 dark:text-gray-500">
             No branches yet
           </div>
         ) : (
@@ -113,14 +113,14 @@ export default function BranchesPage() {
               className={`card ${!b.isActive ? "opacity-50" : ""}`}
             >
               <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-gray-900">🏪 {b.name}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">🏪 {b.name}</h3>
                 <span
-                  className={`badge ${b.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
+                  className={`badge ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}
                 >
                   {b.isActive ? "Active" : "Inactive"}
                 </span>
               </div>
-              <div className="text-sm text-gray-500 space-y-1">
+              <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
                 <p>
                   📍 {b.address}
                   {b.city ? `, ${b.city}` : ""}

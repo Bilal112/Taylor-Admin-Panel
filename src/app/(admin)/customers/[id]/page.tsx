@@ -98,19 +98,19 @@ export default function CustomerDetailPage() {
     );
   if (!customer)
     return (
-      <div className="text-center py-20 text-gray-400">Customer not found</div>
+      <div className="text-center py-20 text-gray-400 dark:text-gray-500">Customer not found</div>
     );
 
   return (
     <div className="max-w-3xl space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
         {customer.name}
       </h1>
 
       {/* Info card */}
       <div className="card space-y-3">
         <div className="flex justify-between items-center">
-          <h2 className="font-semibold text-gray-700">Customer Info</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">Customer Info</h2>
           <button
             onClick={() => setEditInfo((v) => !v)}
             className="text-xs text-primary hover:underline"
@@ -125,7 +125,7 @@ export default function CustomerDetailPage() {
           >
             {INFO_FIELDS.map(([k, l]) => (
               <div key={k}>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                   {l}
                 </label>
                 <input
@@ -151,22 +151,22 @@ export default function CustomerDetailPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div>
-              <span className="text-gray-400">Phone:</span> {customer.phone}
+              <span className="text-gray-400 dark:text-gray-500">Phone:</span> {customer.phone}
             </div>
             <div>
-              <span className="text-gray-400">Email:</span>{" "}
+              <span className="text-gray-400 dark:text-gray-500">Email:</span>{" "}
               {customer.email || "—"}
             </div>
             <div>
-              <span className="text-gray-400">Gender:</span>{" "}
+              <span className="text-gray-400 dark:text-gray-500">Gender:</span>{" "}
               {customer.gender || "—"}
             </div>
             <div>
-              <span className="text-gray-400">Branch:</span>{" "}
+              <span className="text-gray-400 dark:text-gray-500">Branch:</span>{" "}
               {typeof customer.branch === "object" ? customer.branch?.name : ""}
             </div>
             <div className="sm:col-span-2">
-              <span className="text-gray-400">Address:</span>{" "}
+              <span className="text-gray-400 dark:text-gray-500">Address:</span>{" "}
               {customer.address || "—"}
             </div>
           </div>
@@ -175,11 +175,11 @@ export default function CustomerDetailPage() {
 
       {/* Measurements */}
       <div className="card space-y-3">
-        <h2 className="font-semibold text-gray-700">Measurements (inches)</h2>
+        <h2 className="font-semibold text-gray-700 dark:text-gray-300">Measurements (inches)</h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
           {MEASUREMENT_FIELDS.map(([k, l]) => (
             <div key={k}>
-              <label className="block text-xs text-gray-500 mb-1">{l}</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{l}</label>
               <input
                 type="number"
                 step="0.5"
@@ -196,7 +196,7 @@ export default function CustomerDetailPage() {
           ))}
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Notes</label>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Notes</label>
           <textarea
             className="input text-sm"
             rows={2}
@@ -213,28 +213,28 @@ export default function CustomerDetailPage() {
 
       {/* Orders history */}
       <div className="card">
-        <h2 className="font-semibold text-gray-700 mb-3">
+        <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
           Order History ({orders.length})
         </h2>
         {orders.length === 0 ? (
-          <p className="text-sm text-gray-400">No orders yet</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">No orders yet</p>
         ) : (
           <div className="space-y-2">
             {orders.map((o) => (
               <div
                 key={o._id}
-                className="flex items-center justify-between flex-wrap gap-2 bg-gray-50 rounded-lg px-3 py-2"
+                className="flex items-center justify-between flex-wrap gap-2 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2"
               >
                 <div className="min-w-0">
                   <span className="font-mono text-sm text-primary">
                     {o.orderNumber}
                   </span>
-                  <span className="text-gray-500 text-xs ml-2">
+                  <span className="text-gray-500 dark:text-gray-400 text-xs ml-2">
                     {o.items?.map((it) => it.garmentType).join(", ")}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs text-gray-400 capitalize">
+                  <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">
                     {o.status?.replace(/_/g, " ")}
                   </span>
                   <Link

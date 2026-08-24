@@ -122,7 +122,7 @@ export default function StaffPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Staff</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Staff</h1>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="btn-primary text-sm"
@@ -133,11 +133,11 @@ export default function StaffPage() {
 
       {showForm && (
         <form onSubmit={handleCreate} className="card space-y-4">
-          <h2 className="font-semibold text-gray-700">New Staff Member</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">New Staff Member</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Name *
               </label>
               <input
@@ -148,7 +148,7 @@ export default function StaffPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Phone Number *
               </label>
               <input
@@ -160,7 +160,7 @@ export default function StaffPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Role *
               </label>
               <select
@@ -178,7 +178,7 @@ export default function StaffPage() {
             </div>
             {user?.role === "super_admin" && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Branch *
                 </label>
                 <select
@@ -197,7 +197,7 @@ export default function StaffPage() {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Commission/piece (PKR)
               </label>
               <input
@@ -212,9 +212,9 @@ export default function StaffPage() {
           </div>
 
           {/* Login access toggle — not needed for shop-floor roles, this is just a data record */}
-          <div className="border-t border-gray-100 pt-4">
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
             {requiresLogin ? (
-              <p className="text-xs text-gray-500 mb-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                 This role needs to sign in to the admin panel, so email &amp;
                 password are required.
               </p>
@@ -226,7 +226,7 @@ export default function StaffPage() {
                   onChange={(e) => setWantsLogin(e.target.checked)}
                   className="w-4 h-4 text-primary"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Give this staff member login access
                 </span>
               </label>
@@ -235,7 +235,7 @@ export default function StaffPage() {
             {showLoginFields && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Email {requiresLogin && "*"}
                   </label>
                   <input
@@ -249,7 +249,7 @@ export default function StaffPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Password {requiresLogin && "*"}
                   </label>
                   <input
@@ -290,7 +290,7 @@ export default function StaffPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : staff.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400">
+        <div className="card text-center py-12 text-gray-400 dark:text-gray-500">
           No staff found
         </div>
       ) : (
@@ -303,30 +303,30 @@ export default function StaffPage() {
                 className={`card space-y-2 ${!m.isActive ? "opacity-50" : ""}`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">{m.name}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{m.name}</span>
                   <span
-                    className={`badge ${m.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
+                    className={`badge ${m.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}
                   >
                     {m.isActive ? "Active" : "Inactive"}
                   </span>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
                   {ROLE_LABELS[m.role] || m.role?.replace(/_/g, " ")} ·{" "}
                   {(typeof m.branch === "object" && m.branch?.name) || "—"}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {m.phone || "—"} · PKR {m.commissionPerPiece || 0}/piece
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {m.hasLogin ? (
                     <span>{m.email}</span>
                   ) : (
-                    <span className="text-gray-300">No login</span>
+                    <span className="text-gray-300 dark:text-gray-600">No login</span>
                   )}
                 </div>
                 <button
                   onClick={() => toggleActive(m._id, m.isActive)}
-                  className="text-xs text-gray-500 hover:text-red-500"
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
                 >
                   {m.isActive ? "Deactivate" : "Activate"}
                 </button>
@@ -335,10 +335,10 @@ export default function StaffPage() {
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden md:block bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
                   <tr>
                     {[
                       "Name",
@@ -352,44 +352,44 @@ export default function StaffPage() {
                     ].map((h) => (
                       <th
                         key={h}
-                        className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                        className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
                       >
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                   {staff.map((m) => (
                     <tr
                       key={m._id}
-                      className={`hover:bg-gray-50 transition-colors ${!m.isActive ? "opacity-50" : ""}`}
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!m.isActive ? "opacity-50" : ""}`}
                     >
-                      <td className="px-4 py-3 font-medium">{m.name}</td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{m.name}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                         {ROLE_LABELS[m.role] || m.role?.replace(/_/g, " ")}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {(typeof m.branch === "object" && m.branch?.name) || "—"}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {m.phone || "—"}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         PKR {m.commissionPerPiece || 0}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {m.hasLogin ? (
-                          <span className="text-gray-600">{m.email}</span>
+                          <span className="text-gray-600 dark:text-gray-400">{m.email}</span>
                         ) : (
-                          <span className="text-gray-300 text-xs">
+                          <span className="text-gray-300 dark:text-gray-600 text-xs">
                             No login
                           </span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`badge ${m.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
+                          className={`badge ${m.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}
                         >
                           {m.isActive ? "Active" : "Inactive"}
                         </span>
@@ -397,7 +397,7 @@ export default function StaffPage() {
                       <td className="px-4 py-3">
                         <button
                           onClick={() => toggleActive(m._id, m.isActive)}
-                          className="text-xs text-gray-500 hover:text-red-500"
+                          className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
                         >
                           {m.isActive ? "Deactivate" : "Activate"}
                         </button>

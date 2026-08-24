@@ -60,7 +60,7 @@ export default function CustomersPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
           Customers
         </h1>
         <button
@@ -74,10 +74,10 @@ export default function CustomersPage() {
       {/* Add form */}
       {showForm && (
         <form onSubmit={handleCreate} className="card space-y-4">
-          <h2 className="font-semibold text-gray-700">New Customer</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">New Customer</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Name *
               </label>
               <input
@@ -88,7 +88,7 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Phone *
               </label>
               <input
@@ -99,7 +99,7 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email
               </label>
               <input
@@ -110,7 +110,7 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Gender
               </label>
               <select
@@ -126,7 +126,7 @@ export default function CustomersPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Address
             </label>
             <input
@@ -180,7 +180,7 @@ export default function CustomersPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : customers.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400">
+        <div className="card text-center py-12 text-gray-400 dark:text-gray-500">
           No customers found
         </div>
       ) : (
@@ -193,12 +193,12 @@ export default function CustomersPage() {
                 href={`/customers/${c._id}`}
                 className="card block space-y-1"
               >
-                <div className="font-medium">{c.name}</div>
-                <div className="text-sm text-gray-600">{c.phone}</div>
-                <div className="text-xs text-gray-400">
+                <div className="font-medium text-gray-900 dark:text-gray-100">{c.name}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{c.phone}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">
                   {c.email || "—"} · {c.gender || "—"}
                 </div>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-gray-400 dark:text-gray-500">
                   {(typeof c.branch === "object" && c.branch?.name) || "—"}
                 </div>
               </Link>
@@ -206,10 +206,10 @@ export default function CustomersPage() {
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden md:block bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
                   <tr>
                     {[
                       "Name",
@@ -221,28 +221,28 @@ export default function CustomersPage() {
                     ].map((h) => (
                       <th
                         key={h}
-                        className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                        className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
                       >
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                   {customers.map((c) => (
                     <tr
                       key={c._id}
-                      className="hover:bg-gray-50 transition-colors"
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
-                      <td className="px-4 py-3 font-medium">{c.name}</td>
-                      <td className="px-4 py-3">{c.phone}</td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{c.name}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{c.phone}</td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {c.email || "—"}
                       </td>
-                      <td className="px-4 py-3 capitalize">
+                      <td className="px-4 py-3 capitalize text-gray-700 dark:text-gray-300">
                         {c.gender || "—"}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {(typeof c.branch === "object" && c.branch?.name) || "—"}
                       </td>
                       <td className="px-4 py-3">
