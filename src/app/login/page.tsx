@@ -16,7 +16,6 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login(form.email, form.password);
-      debugger;
       toast.success(`Welcome, ${user.name}!`);
       router.push("/dashboard");
     } catch (err) {
