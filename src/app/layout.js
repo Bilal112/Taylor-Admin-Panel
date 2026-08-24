@@ -1,10 +1,10 @@
-import './globals.css';
-import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from '@/context/AuthContext';
+import "./globals.css";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata = {
-  title: 'Hafiz Tailor Admin',
-  description: 'Multi-branch tailoring shop management system',
+  title: "Hafiz Tailor Admin",
+  description: "Multi-branch tailoring shop management system",
 };
 
 export default function RootLayout({ children }) {
