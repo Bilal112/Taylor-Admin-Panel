@@ -1,4 +1,4 @@
-// File: /Users/mac/Documents/Github/hafiz_taylor_system/frontend/src/app/layout.js
+// File: /Users/mac/Documents/Github/hafiz_taylor_system/frontend/src/app/layout.tsx
 import * as entry from '../../../src/app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
