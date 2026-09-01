@@ -6,7 +6,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 
 export const metadata: Metadata = {
-  title: "Hafiz Tailor Admin",
+  title: "Taylor App",
   description: "Multi-branch tailoring shop management system",
 };
 
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 const THEME_INIT_SCRIPT = `
 (function () {
   try {
-    var stored = localStorage.getItem("hafiz-tailor-theme");
+    var stored = localStorage.getItem("taylor-app-theme");
     var resolved = stored === "dark" || stored === "light" ? stored :
       (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     if (resolved === "dark") document.documentElement.classList.add("dark");

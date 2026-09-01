@@ -13,11 +13,20 @@ export type UserRole =
 
 export type Gender = "male" | "female" | "other";
 
+// Per-branch operational switches (backend Branch.settings). Branches created
+// before settings existed have no object at all — treat undefined as the
+// backend defaults: requireOrderPrice true, autoAssignOrders false.
+export interface BranchSettings {
+  requireOrderPrice?: boolean;
+  autoAssignOrders?: boolean;
+}
+
 export interface Branch {
   _id: string;
   name: string;
   address?: string;
   phone?: string;
+  settings?: BranchSettings;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;

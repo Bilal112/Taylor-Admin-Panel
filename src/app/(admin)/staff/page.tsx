@@ -53,6 +53,11 @@ export default function StaffPage() {
   const requiresLogin = LOGIN_REQUIRED_ROLES.includes(form.role);
   const showLoginFields = requiresLogin || wantsLogin;
 
+  // Creating admin accounts is super_admin-only (enforced server-side too) —
+  // branch admins only get the shop-floor/checker roles here.
+  const assignableRoles =
+    user?.role === "super_admin" ? ROLES : ROLES.filter((r) => r !== "admin");
+
   useEffect(() => {
     if (!user) return;
     Promise.all([
@@ -169,7 +174,7 @@ export default function StaffPage() {
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })}
               >
-                {ROLES.map((r) => (
+                {assignableRoles.map((r) => (
                   <option key={r} value={r}>
                     {ROLE_LABELS[r]}
                   </option>

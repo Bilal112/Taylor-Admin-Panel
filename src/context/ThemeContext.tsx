@@ -13,7 +13,8 @@ interface ThemeContextValue {
   setTheme: (theme: ThemeChoice) => void;
 }
 
-const STORAGE_KEY = "hafiz-tailor-theme";
+// Must match the theme-init inline script in app/layout.tsx.
+const STORAGE_KEY = "taylor-app-theme";
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: "light",

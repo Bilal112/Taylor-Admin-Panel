@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
+import { useAuth } from "@/context/AuthContext";
 import type { GarmentType, FabricSource, PaymentMethod } from "@/types/order";
 import type { Customer, Measurement } from "@/types/customer";
 import type { User } from "@/types/user";
@@ -72,7 +73,31 @@ interface OrderForm {
 
 export default function NewOrderPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  // Branch settings (set on the Settings page): whether item prices are
+  // required here, and whether the server auto-assigns a cutting master when
+  // none is picked. Defaults match the backend's for branches without a
+  // settings object; super_admin (no branch of their own) just gets defaults.
+  const [branchSettings, setBranchSettings] = useState({
+    requireOrderPrice: true,
+    autoAssignOrders: false,
+  });
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    api
+      .get("/branches")
+      .then(({ data }) => {
+        const own = data.data[0]; // an admin's list is exactly their own branch
+        if (own)
+          setBranchSettings({
+            requireOrderPrice: own.settings?.requireOrderPrice !== false,
+            autoAssignOrders: own.settings?.autoAssignOrders === true,
+          });
+      })
+      .catch(() => {}); // fall back to defaults silently
+  }, [user]);
   const [staffByRole, setStaffByRole] = useState<Partial<Record<StaffField, User[]>>>({});
   const [assignment, setAssignment] = useState<Record<StaffField, string>>({
     cuttingMaster: "",
@@ -178,6 +203,13 @@ export default function NewOrderPage() {
     }
     if (items.some((it) => !it.garmentType)) {
       toast.error("Pick an item type for every line");
+      return;
+    }
+    if (
+      branchSettings.requireOrderPrice &&
+      items.some((it) => !(Number(it.basePrice) > 0))
+    ) {
+      toast.error("Enter a price for every item");
       return;
     }
     setLoading(true);
@@ -520,10 +552,10 @@ export default function NewOrderPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      Price per Unit (PKR) *
+                      Price per Unit (PKR){branchSettings.requireOrderPrice && " *"}
                     </label>
                     <input
-                      required
+                      required={branchSettings.requireOrderPrice}
                       type="number"
                       className="input text-sm"
                       value={it.basePrice}
@@ -665,8 +697,9 @@ export default function NewOrderPage() {
             Staff Assignment (optional)
           </h3>
           <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
-            Leave all three blank to save this order as a draft — you can assign
-            staff later from the order page.
+            {branchSettings.autoAssignOrders
+              ? "Auto-assign is on — leave Cutting Master blank and the least busy one is assigned automatically."
+              : "Leave all three blank to save this order as a draft — you can assign staff later from the order page."}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {STAFF_ROLES.map(([field, , label]) => (

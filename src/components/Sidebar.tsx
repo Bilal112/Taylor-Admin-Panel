@@ -54,6 +54,12 @@ const navItems: NavItem[] = [
     roles: ["super_admin", "admin"],
   },
   { href: "/branches", label: "Branches", icon: "🏪", roles: ["super_admin"] },
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: "⚙️",
+    roles: ["super_admin", "admin"],
+  },
 ];
 
 interface NavContentProps {
@@ -108,7 +114,7 @@ function NavContent({ allowed, pathname, user, onNavigate, handleLogout }: NavCo
   return (
     <>
       <div className="p-6 border-b border-gray-100 dark:border-gray-800">
-        <h1 className="text-xl font-bold text-primary">✂️ Hafiz Tailor</h1>
+        <h1 className="text-xl font-bold text-primary">✂️ Taylor App</h1>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
           {(user?.branch && typeof user.branch === "object" && user.branch.name) || "All Branches"}
         </p>
@@ -192,7 +198,7 @@ export default function Sidebar() {
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <h1 className="text-lg font-bold text-primary">✂️ Hafiz Tailor</h1>
+        <h1 className="text-lg font-bold text-primary">✂️ Taylor App</h1>
         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
           {user?.name?.[0]?.toUpperCase()}
         </div>

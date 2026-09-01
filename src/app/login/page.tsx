@@ -30,7 +30,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-light to-white dark:from-gray-900 dark:to-gray-950">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 w-full max-w-md border border-transparent dark:border-gray-800">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">✂️ Hafiz Tailor</h1>
+          <h1 className="text-3xl font-bold text-primary">✂️ Taylor App</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Admin Management System</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -44,7 +44,7 @@ export default function LoginPage() {
               className="input"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="admin@hafiz.com"
+              placeholder="you@example.com"
             />
           </div>
           <div>

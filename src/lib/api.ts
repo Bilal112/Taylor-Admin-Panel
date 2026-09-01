@@ -5,7 +5,7 @@ import axios, { type InternalAxiosRequestConfig, type AxiosError } from "axios";
 // is required so the browser actually sends/receives that cookie on
 // cross-origin requests (frontend and backend are different origins).
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
   withCredentials: true,
 });
 
