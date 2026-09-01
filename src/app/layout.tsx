@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import InstallPrompt from "@/components/InstallPrompt";
 
 export const metadata: Metadata = {
   title: "Taylor App",
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <AuthProvider>
             {children}
             <Toaster position="top-right" />
+            <InstallPrompt />
           </AuthProvider>
         </ThemeProvider>
       </body>
