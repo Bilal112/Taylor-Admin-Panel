@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
 import { useAuth } from "@/context/AuthContext";
 import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
+import { hasFeature } from "@/lib/features";
 import type { GarmentType, FabricSource, PaymentMethod } from "@/types/order";
 import type { Customer, Measurement } from "@/types/customer";
 import type { User } from "@/types/user";
@@ -188,8 +189,11 @@ export default function NewOrderPage() {
   const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD, local timezone
 
   // ----- Phone lookup -----
-  const lookupPhone = async () => {
-    const normalized = normalizePkMobile(phone);
+  const lookupPhone = async (phoneOverride?: string) => {
+    // Guard the override type: this is also used directly as an onClick
+    // handler, where the click event must not be mistaken for a phone.
+    const target = typeof phoneOverride === "string" ? phoneOverride : phone;
+    const normalized = normalizePkMobile(target);
     if (!normalized) {
       toast.error(PHONE_ERROR);
       return;
@@ -218,6 +222,64 @@ export default function NewOrderPage() {
       setLooking(false);
     }
   };
+
+  // Deep links: /orders/new?phone=03XX… auto-runs the lookup (used by the
+  // appointments "Start Order" button), and ?repeat=<orderId> copies a past
+  // order's items (repeatOrder feature). window.location.search instead of
+  // useSearchParams keeps this page statically renderable.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const qPhone = params.get("phone");
+    if (qPhone) {
+      const normalized = normalizePkMobile(qPhone);
+      if (normalized) {
+        setPhone(normalized);
+        lookupPhone(normalized);
+      }
+    }
+    const repeatId = params.get("repeat");
+    if (repeatId && user && hasFeature(user, "repeatOrder")) {
+      api
+        .get(`/orders/${repeatId}`)
+        .then(({ data }) => {
+          const o = data.data;
+          // Only finished orders may be repeated — same rule as the button.
+          if (!["ready", "delivered"].includes(o.status)) {
+            toast.error("Only ready or delivered orders can be repeated");
+            return;
+          }
+          if (Array.isArray(o.items) && o.items.length) {
+            setItems(
+              o.items.map((it: any) => ({
+                garmentType: it.garmentType || "",
+                quantity: String(it.quantity || 1),
+                basePrice: String(it.basePrice || 0),
+                fabric: it.fabric || "",
+                fabricSource: it.fabricSource || "customer_provided",
+                fabricAmount: String(it.fabricAmount || 0),
+              })),
+            );
+          }
+          if (o.styleNotes) set("styleNotes", o.styleNotes);
+          const custPhone =
+            typeof o.customer === "object" && o.customer && "phone" in o.customer
+              ? String(o.customer.phone || "")
+              : "";
+          if (!qPhone && custPhone) {
+            const n = normalizePkMobile(custPhone);
+            if (n) {
+              setPhone(n);
+              lookupPhone(n);
+            } else {
+              setPhone(custPhone); // legacy format — admin can adjust
+            }
+          }
+          toast.success("Items copied from the previous order");
+        })
+        .catch(() => toast.error("Could not load the previous order"));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ----- Submit -----
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -341,7 +403,7 @@ export default function NewOrderPage() {
           />
           <button
             type="button"
-            onClick={lookupPhone}
+            onClick={() => lookupPhone()}
             disabled={looking || !phone}
             className="btn-primary text-sm px-4"
           >
@@ -727,8 +789,8 @@ export default function NewOrderPage() {
           </h3>
           <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
             {branchSettings.autoAssignOrders
-              ? "Auto-assign is on — leave Cutting Master blank and the least busy one is assigned automatically."
-              : "Leave all three blank to save this order as a draft — you can assign staff later from the order page."}
+              ? "Auto-assign is on — any role left blank is filled automatically (least busy first) so the order starts right away."
+              : "The order starts right away only when all three roles are picked — otherwise it's saved as a draft and activated from the order page."}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {STAFF_ROLES.map(([field, , label]) => (

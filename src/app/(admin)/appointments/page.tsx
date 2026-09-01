@@ -1,6 +1,9 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import api from "@/lib/api";
+import { hasFeature } from "@/lib/features";
+import { waLink } from "@/lib/whatsapp";
 import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
 import { useAuth } from "@/context/AuthContext";
@@ -210,9 +213,36 @@ export default function AppointmentsPage() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       {r.status === "booked" && (
                         <>
+                          {hasFeature(user, "appointmentLoop") && (
+                            <>
+                              {/* Booking -> order in two taps: New Order opens
+                                  with this phone already looked up. */}
+                              <Link
+                                href={`/orders/new?phone=${encodeURIComponent(r.phone)}`}
+                                className="text-xs text-primary font-medium hover:underline"
+                              >
+                                Start Order
+                              </Link>
+                              <a
+                                href={waLink(
+                                  r.phone,
+                                  `Reminder: your appointment at ${
+                                    (typeof r.branch === "object" && r.branch?.name) || "our shop"
+                                  } is on ${r.date} at ${to12h(r.visitTime || r.time)}.`,
+                                )}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-3 text-xs text-green-600 dark:text-green-400 hover:underline"
+                              >
+                                💬 Remind
+                              </a>
+                            </>
+                          )}
                           <button
                             onClick={() => setStatus(r, "completed")}
-                            className="text-xs text-green-600 dark:text-green-400 hover:underline"
+                            className={`text-xs text-green-600 dark:text-green-400 hover:underline ${
+                              hasFeature(user, "appointmentLoop") ? "ml-3" : ""
+                            }`}
                           >
                             Complete
                           </button>

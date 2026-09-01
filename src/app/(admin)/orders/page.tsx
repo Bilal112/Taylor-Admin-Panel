@@ -6,8 +6,20 @@ import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import clsx from "clsx";
+import { errorMessage } from "@/lib/errorMessage";
+import { hasFeature } from "@/lib/features";
 import type { Order, OrderStatus } from "@/types/order";
 import type { Pagination } from "@/types/api";
+
+type Chip = "" | "today" | "overdue" | "unpaid" | "drafts";
+
+const CHIPS: { key: Chip; label: string }[] = [
+  { key: "", label: "All" },
+  { key: "today", label: "⏰ Due Today" },
+  { key: "overdue", label: "🔥 Overdue" },
+  { key: "unpaid", label: "💸 Unpaid" },
+  { key: "drafts", label: "📝 Drafts" },
+];
 
 const STATUS_COLORS: Partial<Record<OrderStatus, string>> = {
   draft: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
@@ -39,8 +51,10 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "">("");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<Partial<Pagination>>({});
+  const [chip, setChip] = useState<Chip>("");
 
   const isAdmin = !!user && ["super_admin", "admin"].includes(user.role);
+  const quickActions = isAdmin && hasFeature(user, "orderQuickActions");
   const canSeeCustomer = isAdmin;
   const canSeeBalance = isAdmin;
 
@@ -53,6 +67,11 @@ export default function OrdersPage() {
       const params: Record<string, unknown> = { page, limit: 20 };
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
+      // Quick-filter chips (orderQuickActions feature)
+      if (chip === "unpaid") params.unpaid = "1";
+      else if (chip === "today") params.due = "today";
+      else if (chip === "overdue") params.due = "overdue";
+      else if (chip === "drafts") params.status = "draft";
       const { data } = await api.get("/orders", { params });
       setOrders(data.data);
       setPagination(data.pagination);
@@ -68,11 +87,75 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, statusFilter]);
+  }, [page, statusFilter, chip]);
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     fetchOrders();
+  };
+
+  // ── Quick actions (orderQuickActions feature) — the three moves an admin
+  // makes all day, straight from the row. window.prompt/confirm keep them to
+  // one tap; the API enforces all the usual rules either way. ──────────────
+  const markReady = async (order: Order) => {
+    const rack = window.prompt("Rack number for this order:", order.rackNumber || "");
+    if (rack === null) return;
+    if (!rack.trim()) {
+      toast.error("Rack number is required");
+      return;
+    }
+    try {
+      await api.put(`/orders/${order._id}/status`, {
+        status: "ready",
+        rackNumber: rack.trim(),
+      });
+      toast.success("Marked as ready 📦");
+      fetchOrders({ silent: true });
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to update order"));
+    }
+  };
+
+  const collectPayment = async (order: Order) => {
+    const amountStr = window.prompt(
+      `Amount received (balance PKR ${order.balanceDue?.toLocaleString()}):`,
+      String(order.balanceDue || ""),
+    );
+    if (amountStr === null) return;
+    const amount = Number(amountStr);
+    if (!(amount > 0)) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    try {
+      await api.put(`/orders/${order._id}/payment`, { amount, method: "cash" });
+      toast.success("Payment recorded 💵");
+      fetchOrders({ silent: true });
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to record payment"));
+    }
+  };
+
+  const deliverOrder = async (order: Order) => {
+    try {
+      if ((order.balanceDue || 0) > 0) {
+        const collect = window.confirm(
+          `Balance due is PKR ${order.balanceDue.toLocaleString()}. Collect it as cash and mark delivered?`,
+        );
+        if (!collect) return;
+        await api.put(`/orders/${order._id}/payment`, {
+          amount: order.balanceDue,
+          method: "cash",
+        });
+      } else if (!window.confirm("Mark this order as delivered?")) {
+        return;
+      }
+      await api.put(`/orders/${order._id}/status`, { status: "delivered" });
+      toast.success("Delivered ✓");
+      fetchOrders({ silent: true });
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to deliver order"));
+    }
   };
 
   // "Due tomorrow, not ready" — highlight rows at risk of missing pickup
@@ -161,6 +244,29 @@ export default function OrdersPage() {
           ))}
         </select>
       </div>
+
+      {/* Quick-filter chips (orderQuickActions feature) */}
+      {quickActions && (
+        <div className="flex gap-2 flex-wrap">
+          {CHIPS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => {
+                setChip(key);
+                setPage(1);
+              }}
+              className={clsx(
+                "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                chip === key
+                  ? "bg-primary text-white border-primary"
+                  : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -393,7 +499,33 @@ export default function OrdersPage() {
                         )}
 
                         {/* Actions */}
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {quickActions && order.status === "quality_check" && (
+                            <button
+                              onClick={() => markReady(order)}
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline mr-3"
+                            >
+                              📦 Rack
+                            </button>
+                          )}
+                          {quickActions && order.status === "ready" && (
+                            <button
+                              onClick={() => deliverOrder(order)}
+                              className="text-xs text-green-600 dark:text-green-400 hover:underline mr-3"
+                            >
+                              ✓ Deliver
+                            </button>
+                          )}
+                          {quickActions &&
+                            (order.balanceDue || 0) > 0 &&
+                            order.status !== "cancelled" && (
+                              <button
+                                onClick={() => collectPayment(order)}
+                                className="text-xs text-amber-600 dark:text-amber-400 hover:underline mr-3"
+                              >
+                                💵 Pay
+                              </button>
+                            )}
                           <Link
                             href={`/orders/${order._id}`}
                             className="text-primary hover:underline text-xs font-medium"

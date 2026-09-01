@@ -98,6 +98,62 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
+
+  // Inline order editing (orderEdit feature) — items' prices/quantities plus
+  // the order-level fields the backend's EDIT_FIELDS whitelist accepts.
+  // Totals are recalculated server-side on save.
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<{
+    suitNo: string;
+    promisedDate: string;
+    rushSurcharge: string;
+    discountAmount: string;
+    styleNotes: string;
+    items: { quantity: string; basePrice: string; fabricAmount: string }[];
+  } | null>(null);
+
+  const startEdit = () => {
+    if (!order) return;
+    setEditForm({
+      suitNo: order.suitNo || "",
+      promisedDate: order.promisedDate
+        ? String(order.promisedDate).slice(0, 10)
+        : "",
+      rushSurcharge: String(order.rushSurcharge || 0),
+      discountAmount: String(order.discountAmount || 0),
+      styleNotes: order.styleNotes || "",
+      items: (order.items || []).map((it) => ({
+        quantity: String(it.quantity || 1),
+        basePrice: String(it.basePrice || 0),
+        fabricAmount: String(it.fabricAmount || 0),
+      })),
+    });
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    if (!order || !editForm) return;
+    try {
+      await api.put(`/orders/${order._id}`, {
+        suitNo: editForm.suitNo || undefined,
+        ...(editForm.promisedDate ? { promisedDate: editForm.promisedDate } : {}),
+        rushSurcharge: Number(editForm.rushSurcharge) || 0,
+        discountAmount: Number(editForm.discountAmount) || 0,
+        styleNotes: editForm.styleNotes,
+        items: (order.items || []).map((it, i) => ({
+          ...it,
+          quantity: Number(editForm.items[i]?.quantity) || 1,
+          basePrice: Number(editForm.items[i]?.basePrice) || 0,
+          fabricAmount: Number(editForm.items[i]?.fabricAmount) || 0,
+        })),
+      });
+      setEditing(false);
+      toast.success("Order updated — totals recalculated");
+      fetchOrder({ silent: true });
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to update order"));
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [payment, setPayment] = useState<{ amount: string; method: PaymentMethod }>({ amount: "", method: "cash" });
@@ -166,6 +222,13 @@ export default function OrderDetailPage() {
 
   const saveAssignment = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Activation needs the full trio — same rule as the backend.
+    if (!assignment.cuttingMaster || !assignment.stitcher || !assignment.presser) {
+      toast.error(
+        "Select all three — Cutting Master, Stitcher and Press Man — to activate this order",
+      );
+      return;
+    }
     setAssigning(true);
     try {
       const { data } = await api.put(`/orders/${id}/assign`, {
@@ -199,7 +262,7 @@ export default function OrderDetailPage() {
       });
       if (data.data.status === "draft") {
         toast(
-          "Auto Assign only picks staff with login access — no eligible cutting master found, still in draft",
+          "Auto Assign only picks staff with login access — not every role could be filled, still in draft",
           { icon: "⚠️" },
         );
       } else {
@@ -370,6 +433,24 @@ export default function OrderDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Repeat only finished work — an in-progress or draft order isn't
+              a proven template yet. */}
+          {isAdmin &&
+            hasFeature(user, "repeatOrder") &&
+            ["ready", "delivered"].includes(order.status) && (
+              <Link
+                href={`/orders/new?repeat=${order._id}`}
+                className="btn-secondary text-sm"
+                title="Start a new order for this customer with the same items"
+              >
+                🔁 Repeat
+              </Link>
+            )}
+          {isAdmin && hasFeature(user, "orderEdit") && !editing && (
+            <button onClick={startEdit} className="btn-secondary text-sm">
+              ✏️ Edit
+            </button>
+          )}
           {isAdmin && hasFeature(user, "receiptPrinting") && (
             <Link
               href={`/orders/${order._id}/receipt`}
@@ -461,8 +542,9 @@ export default function OrderDetailPage() {
             </button>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
-            This order is a draft and won't show up for staff until a Cutting
-            Master is assigned. Auto Assign only picks staff with login access.
+            This order is a draft and won&apos;t show up for staff until all
+            three roles — Cutting Master, Stitcher and Press Man — are
+            assigned. Auto Assign only picks staff with login access.
           </p>
           <form
             onSubmit={saveAssignment}
@@ -493,11 +575,23 @@ export default function OrderDetailPage() {
             <div className="sm:col-span-3">
               <button
                 type="submit"
-                disabled={assigning}
+                disabled={
+                  assigning ||
+                  !assignment.cuttingMaster ||
+                  !assignment.stitcher ||
+                  !assignment.presser
+                }
                 className="btn-primary text-sm"
               >
-                {assigning ? "Saving…" : "Save Assignment"}
+                {assigning ? "Saving…" : "Assign & Activate"}
               </button>
+              {(!assignment.cuttingMaster ||
+                !assignment.stitcher ||
+                !assignment.presser) && (
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  Select all three roles to activate.
+                </p>
+              )}
             </div>
           </form>
         </div>
@@ -549,6 +643,138 @@ export default function OrderDetailPage() {
               className="btn-secondary text-sm text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/40"
             >
               ↩️ Reject — Send Back
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit order (orderEdit feature) ── */}
+      {editing && editForm && (
+        <div className="card space-y-4">
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+            ✏️ Edit Order
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                Suit No
+              </label>
+              <input
+                className="input text-sm"
+                value={editForm.suitNo}
+                onChange={(e) =>
+                  setEditForm((f) => f && { ...f, suitNo: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                Promised Date
+              </label>
+              <input
+                type="date"
+                className="input text-sm"
+                value={editForm.promisedDate}
+                onChange={(e) =>
+                  setEditForm((f) => f && { ...f, promisedDate: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                Rush Surcharge
+              </label>
+              <input
+                type="number"
+                min="0"
+                className="input text-sm"
+                value={editForm.rushSurcharge}
+                onChange={(e) =>
+                  setEditForm((f) => f && { ...f, rushSurcharge: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                Discount
+              </label>
+              <input
+                type="number"
+                min="0"
+                className="input text-sm"
+                value={editForm.discountAmount}
+                onChange={(e) =>
+                  setEditForm((f) => f && { ...f, discountAmount: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            {(order.items || []).map((it, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-4 gap-2 items-end border border-gray-200 dark:border-gray-700 rounded-lg p-2"
+              >
+                <p className="text-sm text-gray-700 dark:text-gray-300 col-span-4 sm:col-span-1 font-medium">
+                  {it.garmentType}
+                </p>
+                {(["quantity", "basePrice", "fabricAmount"] as const).map(
+                  (field) => (
+                    <div key={field}>
+                      <label className="block text-[10px] uppercase text-gray-400 dark:text-gray-500 mb-0.5">
+                        {field === "quantity"
+                          ? "Qty"
+                          : field === "basePrice"
+                            ? "Price"
+                            : "Fabric"}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="input text-xs py-1"
+                        value={editForm.items[i]?.[field] ?? ""}
+                        onChange={(e) =>
+                          setEditForm(
+                            (f) =>
+                              f && {
+                                ...f,
+                                items: f.items.map((row, ri) =>
+                                  ri === i
+                                    ? { ...row, [field]: e.target.value }
+                                    : row,
+                                ),
+                              },
+                          )
+                        }
+                      />
+                    </div>
+                  ),
+                )}
+              </div>
+            ))}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              Style Notes
+            </label>
+            <textarea
+              rows={2}
+              className="input text-sm"
+              value={editForm.styleNotes}
+              onChange={(e) =>
+                setEditForm((f) => f && { ...f, styleNotes: e.target.value })
+              }
+            />
+          </div>
+          <div className="flex gap-3">
+            <button onClick={saveEdit} className="btn-primary text-sm">
+              Save Changes
+            </button>
+            <button
+              onClick={() => setEditing(false)}
+              className="btn-secondary text-sm"
+            >
+              Cancel
             </button>
           </div>
         </div>

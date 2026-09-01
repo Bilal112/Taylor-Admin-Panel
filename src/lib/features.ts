@@ -54,6 +54,55 @@ export const FEATURES = {
       "Customers can book a visit online; the admin manages the day's list, shift hours and slot capacity.",
     default: true,
   },
+  // Premium features below default OFF: the super_admin grants them per
+  // branch explicitly.
+  appointmentLoop: {
+    label: "Appointment Tools",
+    description:
+      "Start an order straight from a booking, one-click WhatsApp reminders, and the customer's upcoming visit shown on the tracking page.",
+    default: false,
+  },
+  collections: {
+    label: "Collections",
+    description:
+      "A view of every order with balance due and the total receivable.",
+    default: false,
+  },
+  dailySummary: {
+    label: "Daily Closing Summary",
+    description:
+      "Printable end-of-day report — new orders, deliveries, and cash collected per payment method.",
+    default: false,
+  },
+  orderQuickActions: {
+    label: "Order Quick Actions",
+    description:
+      "Deliver, collect payment and set rack straight from the orders list, plus one-tap filters (due today, overdue, unpaid, drafts).",
+    default: false,
+  },
+  navBadges: {
+    label: "Sidebar Badges",
+    description:
+      "Live counts on the Orders menu — drafts waiting, review queue, ready for pickup.",
+    default: false,
+  },
+  repeatOrder: {
+    label: "Repeat Order",
+    description:
+      "One click on a past order pre-fills a new order for the same customer with the same items.",
+    default: false,
+  },
+  changePassword: {
+    label: "Change Password Page",
+    description: "Staff can change their own login password from the panel.",
+    default: false,
+  },
+  orderEdit: {
+    label: "Order Editing",
+    description:
+      "Correct an order after creation — items, prices, dates, discount — with totals recalculated.",
+    default: false,
+  },
 } as const;
 
 export type FeatureKey = keyof typeof FEATURES;

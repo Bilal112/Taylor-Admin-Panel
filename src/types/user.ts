@@ -41,6 +41,14 @@ export interface BranchFeatures {
   receiptPrinting?: boolean;
   publicStatusCheck?: boolean;
   appointments?: boolean;
+  appointmentLoop?: boolean;
+  collections?: boolean;
+  dailySummary?: boolean;
+  orderQuickActions?: boolean;
+  navBadges?: boolean;
+  repeatOrder?: boolean;
+  changePassword?: boolean;
+  orderEdit?: boolean;
 }
 
 export interface Branch {

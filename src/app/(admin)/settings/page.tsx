@@ -29,7 +29,7 @@ const SETTINGS: {
     key: "autoAssignOrders",
     label: "Auto-assign new orders",
     description:
-      "If no cutting master is picked on the New Order form, the least busy one is assigned automatically — instead of saving the order as a draft.",
+      "Roles left blank on the New Order form are filled automatically (least busy first) so the order starts right away instead of being saved as a draft.",
     defaultValue: false,
   },
 ];

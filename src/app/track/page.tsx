@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
+import { to12h } from "@/lib/time";
 
 // PUBLIC page — no login. Customers check their order status with just the
 // phone number they gave the shop. Backed by GET /api/public/orders, which
@@ -42,9 +43,17 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-red-100 text-red-600",
 };
 
+interface PublicAppointment {
+  branch: string;
+  date: string;
+  time: string;
+  visitTime?: string;
+}
+
 export default function TrackPage() {
   const [phone, setPhone] = useState("");
   const [orders, setOrders] = useState<PublicOrder[] | null>(null);
+  const [appointments, setAppointments] = useState<PublicAppointment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -59,6 +68,13 @@ export default function TrackPage() {
     setLoading(true);
     setError("");
     setOrders(null);
+    setAppointments([]);
+    // Upcoming appointments ride along (appointmentLoop feature per branch);
+    // failures are silent — the orders result is the main event.
+    api
+      .get("/public/appointments", { params: { phone: normalized } })
+      .then(({ data }) => setAppointments(data.data || []))
+      .catch(() => {});
     try {
       const { data } = await api.get("/public/orders", {
         params: { phone: normalized },
@@ -119,6 +135,17 @@ export default function TrackPage() {
           </p>
           {error && <p className="text-sm text-red-500">{error}</p>}
         </form>
+
+        {appointments.map((a, i) => (
+          <div
+            key={i}
+            className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-2xl p-4 text-sm text-blue-800 dark:text-blue-300"
+          >
+            📅 Your appointment: <b>{a.branch}</b> —{" "}
+            {new Date(`${a.date}T00:00:00`).toLocaleDateString()} at{" "}
+            <b>{to12h(a.visitTime || a.time)}</b>
+          </div>
+        ))}
 
         {orders && orders.length === 0 && (
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow p-6 text-center text-sm text-gray-500 dark:text-gray-400 border border-transparent dark:border-gray-800">

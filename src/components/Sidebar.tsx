@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme, type ThemeChoice } from "@/context/ThemeContext";
 import clsx from "clsx";
@@ -47,6 +48,20 @@ const navItems: NavItem[] = [
     feature: "appointments",
   },
   {
+    href: "/collections",
+    label: "Collections",
+    icon: "💰",
+    roles: ["super_admin", "admin"],
+    feature: "collections",
+  },
+  {
+    href: "/daily-summary",
+    label: "Daily Summary",
+    icon: "🧾",
+    roles: ["super_admin", "admin"],
+    feature: "dailySummary",
+  },
+  {
     href: "/orders",
     label: "Orders",
     icon: "📋",
@@ -79,12 +94,27 @@ const navItems: NavItem[] = [
     icon: "⚙️",
     roles: ["super_admin", "admin"],
   },
+  {
+    href: "/change-password",
+    label: "Change Password",
+    icon: "🔑",
+    roles: ["super_admin", "admin", "checker"],
+    feature: "changePassword",
+  },
 ];
+
+interface Badges {
+  drafts: number;
+  review: number;
+  ready: number;
+  total: number;
+}
 
 interface NavContentProps {
   allowed: NavItem[];
   pathname: string;
   user: User | null;
+  badges: Badges | null;
   onNavigate?: () => void;
   handleLogout: () => void;
 }
@@ -129,7 +159,7 @@ function ThemeSwitcher() {
 }
 
 // Shared nav content used by both the desktop sidebar and the mobile drawer.
-function NavContent({ allowed, pathname, user, onNavigate, handleLogout }: NavContentProps) {
+function NavContent({ allowed, pathname, user, badges, onNavigate, handleLogout }: NavContentProps) {
   return (
     <>
       <div className="p-6 border-b border-gray-100 dark:border-gray-800">
@@ -154,6 +184,14 @@ function NavContent({ allowed, pathname, user, onNavigate, handleLogout }: NavCo
           >
             <span>{item.icon}</span>
             {item.label}
+            {item.href === "/orders" && badges && badges.total > 0 && (
+              <span
+                title={`${badges.drafts} drafts · ${badges.review} in review · ${badges.ready} ready for pickup`}
+                className="ml-auto bg-primary text-white text-xs font-semibold rounded-full px-2 py-0.5"
+              >
+                {badges.total}
+              </span>
+            )}
           </Link>
         ))}
       </nav>
@@ -191,6 +229,34 @@ export default function Sidebar() {
     logout();
     router.push("/login");
   };
+
+  // Live nav counts (navBadges feature) — refreshed on navigation and every
+  // minute; failures are silent (badges are a convenience, not data).
+  const [badges, setBadges] = useState<Badges | null>(null);
+  const showBadges =
+    !!user &&
+    ["super_admin", "admin"].includes(user.role) &&
+    hasFeature(user, "navBadges");
+  useEffect(() => {
+    if (!showBadges) {
+      setBadges(null);
+      return;
+    }
+    let alive = true;
+    const load = () =>
+      api
+        .get("/dashboard/badges")
+        .then(({ data }) => {
+          if (alive) setBadges(data.data);
+        })
+        .catch(() => {});
+    load();
+    const timer = setInterval(load, 60000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [showBadges, pathname]);
 
   const allowed = navItems.filter(
     (item) =>
@@ -234,6 +300,7 @@ export default function Sidebar() {
           allowed={allowed}
           pathname={pathname}
           user={user}
+          badges={badges}
           handleLogout={handleLogout}
         />
       </aside>
@@ -271,6 +338,7 @@ export default function Sidebar() {
               allowed={allowed}
               pathname={pathname}
               user={user}
+              badges={badges}
               handleLogout={handleLogout}
               onNavigate={() => setMobileOpen(false)}
             />
