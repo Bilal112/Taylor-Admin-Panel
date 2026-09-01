@@ -6,12 +6,16 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme, type ThemeChoice } from "@/context/ThemeContext";
 import clsx from "clsx";
 import type { UserRole, User } from "@/types/user";
+import { hasFeature, type FeatureKey } from "@/lib/features";
 
 interface NavItem {
   href: string;
   label: string;
   icon: string;
   roles: UserRole[];
+  // When set, the item only shows if this feature flag is on for the user's
+  // branch (super_admin always sees it) — see src/lib/features.ts.
+  feature?: FeatureKey;
 }
 
 const navItems: NavItem[] = [
@@ -22,10 +26,25 @@ const navItems: NavItem[] = [
     roles: ["super_admin", "admin", "checker"],
   },
   {
+    href: "/analytics",
+    label: "Analytics",
+    icon: "📈",
+    roles: ["super_admin", "admin"],
+    feature: "analytics",
+  },
+  {
     href: "/upcoming-delivery",
     label: "Upcoming Delivery",
     icon: "🚚",
     roles: ["super_admin", "admin", "checker"],
+    feature: "upcomingDelivery",
+  },
+  {
+    href: "/appointments",
+    label: "Appointments",
+    icon: "📅",
+    roles: ["super_admin", "admin"],
+    feature: "appointments",
   },
   {
     href: "/orders",
@@ -173,7 +192,12 @@ export default function Sidebar() {
     router.push("/login");
   };
 
-  const allowed = navItems.filter((item) => user && item.roles.includes(user.role));
+  const allowed = navItems.filter(
+    (item) =>
+      user &&
+      item.roles.includes(user.role) &&
+      (!item.feature || hasFeature(user, item.feature)),
+  );
 
   return (
     <>

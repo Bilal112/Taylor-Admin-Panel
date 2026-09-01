@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
+import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
 import { errorMessage } from "@/lib/errorMessage";
 import type { User, UserRole, Branch } from "@/types/user";
 
@@ -84,6 +85,11 @@ export default function StaffPage() {
   const handleCreate = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) return;
+    // Phone is optional for staff, but when given it must be a valid PK mobile.
+    if (form.phone && !normalizePkMobile(form.phone)) {
+      toast.error(PHONE_ERROR);
+      return;
+    }
     setSaving(true);
     try {
       const payload: Record<string, unknown> = {
@@ -111,16 +117,59 @@ export default function StaffPage() {
 
   const toggleActive = async (id: string, isActive: boolean) => {
     try {
-      if (isActive) {
-        await api.delete(`/staff/${id}`);
-      } else {
-        await api.put(`/staff/${id}`, { isActive: true });
-      }
+      // Both directions go through PUT — DELETE is a real (guarded) delete now.
+      await api.put(`/staff/${id}`, { isActive: !isActive });
       setStaff((s) =>
         s.map((m) => (m._id === id ? { ...m, isActive: !isActive } : m)),
       );
     } catch {
       toast.error("Failed");
+    }
+  };
+
+  // Mirror of the backend rules: no self-delete, and admin accounts can only
+  // be deleted by a super_admin. Staff with order history come back as a 409
+  // from the API with a "deactivate instead" message.
+  const canDelete = (m: User) =>
+    m._id !== user?._id && (m.role !== "admin" || user?.role === "super_admin");
+
+  // Backend rule: you can't deactivate your own account (it would lock you
+  // out mid-session), so your own row gets no toggle.
+  const canToggleActive = (m: User) => m._id !== user?._id;
+
+  const deleteStaff = async (m: User) => {
+    if (!confirm(`Permanently delete ${m.name}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/staff/${m._id}`);
+      setStaff((s) => s.filter((x) => x._id !== m._id));
+      toast.success("Staff deleted");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to delete staff"));
+    }
+  };
+
+  // Inline commission-rate editing — the one staff detail an admin adjusts
+  // day-to-day, so it's editable right in the list.
+  const [rateEdit, setRateEdit] = useState<{ id: string; value: string } | null>(
+    null,
+  );
+  const saveRate = async () => {
+    if (!rateEdit) return;
+    try {
+      const { data } = await api.put(`/staff/${rateEdit.id}`, {
+        commissionPerPiece: Number(rateEdit.value) || 0,
+      });
+      setStaff((s) =>
+        s.map((m) =>
+          m._id === rateEdit.id
+            ? { ...m, commissionPerPiece: data.data.commissionPerPiece }
+            : m,
+        ),
+      );
+      setRateEdit(null);
+      toast.success("Commission rate updated");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to update rate"));
     }
   };
 
@@ -308,7 +357,14 @@ export default function StaffPage() {
                 className={`card space-y-2 ${!m.isActive ? "opacity-50" : ""}`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{m.name}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {m.name}
+                    {m._id === user?._id && (
+                      <span className="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500">
+                        (you)
+                      </span>
+                    )}
+                  </span>
                   <span
                     className={`badge ${m.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}
                   >
@@ -319,8 +375,45 @@ export default function StaffPage() {
                   {ROLE_LABELS[m.role] || m.role?.replace(/_/g, " ")} ·{" "}
                   {(typeof m.branch === "object" && m.branch?.name) || "—"}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {m.phone || "—"} · PKR {m.commissionPerPiece || 0}/piece
+                <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 flex-wrap">
+                  <span>{m.phone || "—"} ·</span>
+                  {rateEdit?.id === m._id ? (
+                    <>
+                      <input
+                        type="number"
+                        min="0"
+                        autoFocus
+                        className="input text-xs py-0.5 w-20"
+                        value={rateEdit.value}
+                        onChange={(e) =>
+                          setRateEdit({ id: m._id, value: e.target.value })
+                        }
+                        onKeyDown={(e) => e.key === "Enter" && saveRate()}
+                      />
+                      <button onClick={saveRate} className="text-primary font-medium">
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setRateEdit(null)}
+                        className="text-gray-400 dark:text-gray-500"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        setRateEdit({
+                          id: m._id,
+                          value: String(m.commissionPerPiece || 0),
+                        })
+                      }
+                      title="Edit commission rate"
+                      className="hover:text-primary"
+                    >
+                      PKR {m.commissionPerPiece || 0}/piece ✏️
+                    </button>
+                  )}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
                   {m.hasLogin ? (
@@ -329,12 +422,24 @@ export default function StaffPage() {
                     <span className="text-gray-300 dark:text-gray-600">No login</span>
                   )}
                 </div>
-                <button
-                  onClick={() => toggleActive(m._id, m.isActive)}
-                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                >
-                  {m.isActive ? "Deactivate" : "Activate"}
-                </button>
+                <div className="flex gap-4">
+                  {canToggleActive(m) && (
+                    <button
+                      onClick={() => toggleActive(m._id, m.isActive)}
+                      className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                    >
+                      {m.isActive ? "Deactivate" : "Activate"}
+                    </button>
+                  )}
+                  {canDelete(m) && (
+                    <button
+                      onClick={() => deleteStaff(m)}
+                      className="text-xs text-red-500 dark:text-red-400 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -370,7 +475,14 @@ export default function StaffPage() {
                       key={m._id}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!m.isActive ? "opacity-50" : ""}`}
                     >
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{m.name}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                        {m.name}
+                        {m._id === user?._id && (
+                          <span className="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500">
+                            (you)
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                         {ROLE_LABELS[m.role] || m.role?.replace(/_/g, " ")}
                       </td>
@@ -380,8 +492,47 @@ export default function StaffPage() {
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {m.phone || "—"}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                        PKR {m.commissionPerPiece || 0}
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        {rateEdit?.id === m._id ? (
+                          <span className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min="0"
+                              autoFocus
+                              className="input text-xs py-1 w-20"
+                              value={rateEdit.value}
+                              onChange={(e) =>
+                                setRateEdit({ id: m._id, value: e.target.value })
+                              }
+                              onKeyDown={(e) => e.key === "Enter" && saveRate()}
+                            />
+                            <button
+                              onClick={saveRate}
+                              className="text-xs text-primary font-medium hover:underline"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setRateEdit(null)}
+                              className="text-xs text-gray-400 dark:text-gray-500"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              setRateEdit({
+                                id: m._id,
+                                value: String(m.commissionPerPiece || 0),
+                              })
+                            }
+                            title="Edit commission rate"
+                            className="hover:text-primary"
+                          >
+                            PKR {m.commissionPerPiece || 0} ✏️
+                          </button>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {m.hasLogin ? (
@@ -399,13 +550,23 @@ export default function StaffPage() {
                           {m.isActive ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => toggleActive(m._id, m.isActive)}
-                          className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                        >
-                          {m.isActive ? "Deactivate" : "Activate"}
-                        </button>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {canToggleActive(m) && (
+                          <button
+                            onClick={() => toggleActive(m._id, m.isActive)}
+                            className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                          >
+                            {m.isActive ? "Deactivate" : "Activate"}
+                          </button>
+                        )}
+                        {canDelete(m) && (
+                          <button
+                            onClick={() => deleteStaff(m)}
+                            className="ml-3 text-xs text-red-500 dark:text-red-400 hover:underline"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -23,3 +23,24 @@
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
 }
+
+/* Print — only the receipt slip prints: the app shell (sidebar <aside>,
+   mobile <header>) and anything marked .no-print are hidden. Lives here
+   because it must override the admin layout's chrome from outside the page. */
+@media print {
+  aside,
+  header,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  body {
+    background: white !important;
+  }
+  .print-receipt {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}

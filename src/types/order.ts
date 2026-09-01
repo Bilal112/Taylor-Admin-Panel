@@ -60,7 +60,7 @@ export type StaffRef = string | { _id: string; name: string; phone?: string };
 
 export interface Order {
   _id: string;
-  branch: string | { _id: string; name: string };
+  branch: string | { _id: string; name: string; phone?: string; address?: string };
   orderNumber: string;
   customer: string | Customer | { _id: string; name: string; phone: string };
   suitNo?: string;

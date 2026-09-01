@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
@@ -8,6 +9,8 @@ import toast from "react-hot-toast";
 import type { AxiosError } from "axios";
 import { errorMessage } from "@/lib/errorMessage";
 import { isValidObjectId } from "@/lib/validate";
+import { hasFeature } from "@/lib/features";
+import { waLink } from "@/lib/whatsapp";
 import type { Order, OrderStatus, PaymentMethod } from "@/types/order";
 import type { Measurement } from "@/types/customer";
 import type { User, UserRole } from "@/types/user";
@@ -367,6 +370,14 @@ export default function OrderDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {isAdmin && hasFeature(user, "receiptPrinting") && (
+            <Link
+              href={`/orders/${order._id}/receipt`}
+              className="btn-secondary text-sm"
+            >
+              🖨 Receipt
+            </Link>
+          )}
           <button
             onClick={() => fetchOrder({ silent: true })}
             disabled={refreshing}
@@ -555,6 +566,27 @@ export default function OrderDetailPage() {
             {orderCustomer && "address" in orderCustomer && (orderCustomer as { address?: string }).address && (
               <p className="text-sm text-gray-400 dark:text-gray-500">{(orderCustomer as { address?: string }).address}</p>
             )}
+            {/* One-click "order ready" WhatsApp message (whatsappNotify feature) */}
+            {hasFeature(user, "whatsappNotify") &&
+              order.status === "ready" &&
+              orderCustomer &&
+              "phone" in orderCustomer &&
+              orderCustomer.phone && (
+                <a
+                  href={waLink(
+                    String(orderCustomer.phone),
+                    `Assalam o Alaikum ${orderCustomer.name}! Your order ${order.orderNumber}` +
+                      `${order.suitNo ? ` (Suit No ${order.suitNo})` : ""} is ready for pickup.` +
+                      `${order.rackNumber ? ` Rack ${order.rackNumber}.` : ""}` +
+                      `${(order.balanceDue ?? 0) > 0 ? ` Balance due: PKR ${(order.balanceDue ?? 0).toLocaleString()}.` : ""}`,
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium"
+                >
+                  💬 WhatsApp: Order Ready
+                </a>
+              )}
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 import type { AxiosError } from "axios";
@@ -68,6 +69,16 @@ export default function LoginPage() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
+          Customer?{" "}
+          <Link href="/track" className="text-primary hover:underline">
+            📦 Track your order
+          </Link>
+          {" · "}
+          <Link href="/book" className="text-primary hover:underline">
+            📅 Book an appointment
+          </Link>
+        </p>
       </div>
     </div>
   );

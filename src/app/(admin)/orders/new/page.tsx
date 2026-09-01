@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
 import { useAuth } from "@/context/AuthContext";
+import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
 import type { GarmentType, FabricSource, PaymentMethod } from "@/types/order";
 import type { Customer, Measurement } from "@/types/customer";
 import type { User } from "@/types/user";
@@ -84,17 +85,23 @@ export default function NewOrderPage() {
     requireOrderPrice: true,
     autoAssignOrders: false,
   });
+  // Branch price list (priceList feature) — garmentType -> default PKR price.
+  const [garmentPrices, setGarmentPrices] = useState<Record<string, number>>({});
   useEffect(() => {
     if (!user || user.role !== "admin") return;
     api
       .get("/branches")
       .then(({ data }) => {
         const own = data.data[0]; // an admin's list is exactly their own branch
-        if (own)
+        if (own) {
           setBranchSettings({
             requireOrderPrice: own.settings?.requireOrderPrice !== false,
             autoAssignOrders: own.settings?.autoAssignOrders === true,
           });
+          if (own.features?.priceList !== false) {
+            setGarmentPrices(own.settings?.garmentPrices || {});
+          }
+        }
       })
       .catch(() => {}); // fall back to defaults silently
   }, [user]);
@@ -154,6 +161,23 @@ export default function NewOrderPage() {
     setItems((list) =>
       list.map((it, i) => (i === idx ? { ...it, [k]: v } : it)),
     );
+  // Selecting a garment type auto-fills its default price from the branch
+  // price list (priceList feature) — only when no price was typed on that
+  // line yet, so a manual price is never overwritten.
+  const pickGarment = (idx: number, g: ItemForm["garmentType"]) =>
+    setItems((list) =>
+      list.map((it, i) => {
+        if (i !== idx) return it;
+        const def = g ? garmentPrices[g] : undefined;
+        return {
+          ...it,
+          garmentType: g,
+          basePrice:
+            !it.basePrice && def !== undefined ? String(def) : it.basePrice,
+        };
+      }),
+    );
+
   const addItem = () => setItems((list) => [...list, emptyItem()]);
   const removeItem = (idx: number) =>
     setItems((list) =>
@@ -165,13 +189,18 @@ export default function NewOrderPage() {
 
   // ----- Phone lookup -----
   const lookupPhone = async () => {
-    if (!phone.trim()) return;
+    const normalized = normalizePkMobile(phone);
+    if (!normalized) {
+      toast.error(PHONE_ERROR);
+      return;
+    }
+    setPhone(normalized); // reflect the canonical form in the input
     setLooking(true);
     setCustomer(null);
     setCustomerStatus("");
     try {
       const { data } = await api.get("/customers/lookup", {
-        params: { phone: phone.trim() },
+        params: { phone: normalized },
       });
       if (data.found) {
         setCustomer(data.data);
@@ -225,7 +254,7 @@ export default function NewOrderPage() {
         }
         const { data } = await api.post("/customers", {
           name: newCustomerName.trim(),
-          phone: phone.trim(),
+          phone: normalizePkMobile(phone) || phone.trim(),
         });
         customerId = data.data._id;
         setCustomer(data.data);
@@ -526,7 +555,7 @@ export default function NewOrderPage() {
                       className="input text-sm"
                       value={it.garmentType}
                       onChange={(e) =>
-                        setItem(idx, "garmentType", e.target.value as GarmentType)
+                        pickGarment(idx, e.target.value as GarmentType)
                       }
                     >
                       <option value="">Select item…</option>

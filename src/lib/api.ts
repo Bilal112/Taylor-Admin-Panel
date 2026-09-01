@@ -28,13 +28,24 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-// Redirect on 401 — session cookie missing/expired/invalid.
+// Pages anonymous visitors are SUPPOSED to be on. AuthProvider probes
+// /auth/me from the root layout on every page — for a visitor with no
+// session cookie that's a 401, which must NOT bounce them off a public
+// page (it made /, /track and /book unusable for customers).
+const PUBLIC_PATHS = ["/", "/login", "/track", "/book"];
+const isPublicPath = (path: string) =>
+  PUBLIC_PATHS.includes(path) ||
+  path.startsWith("/track/") ||
+  path.startsWith("/book/");
+
+// Redirect on 401 — session cookie missing/expired/invalid — but only away
+// from admin pages; public pages handle (and expect) anonymous visitors.
 api.interceptors.response.use(
   (res) => res,
   (err: AxiosError) => {
     if (err.response?.status === 401 && typeof window !== "undefined") {
       setCsrfToken(null);
-      if (window.location.pathname !== "/login") {
+      if (!isPublicPath(window.location.pathname)) {
         window.location.href = "/login";
       }
     }

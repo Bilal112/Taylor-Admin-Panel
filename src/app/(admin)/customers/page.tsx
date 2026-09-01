@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
+import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
 import type { AxiosError } from "axios";
 import type { Customer } from "@/types/customer";
 import type { Gender } from "@/types/user";
@@ -45,8 +46,16 @@ export default function CustomersPage() {
 
   const handleCreate = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const normalizedPhone = normalizePkMobile(form.phone);
+    if (!normalizedPhone) {
+      toast.error(PHONE_ERROR);
+      return;
+    }
     try {
-      const { data } = await api.post("/customers", form);
+      const { data } = await api.post("/customers", {
+        ...form,
+        phone: normalizedPhone,
+      });
       setCustomers((c) => [data.data, ...c]);
       setShowForm(false);
       setForm(EMPTY_FORM);

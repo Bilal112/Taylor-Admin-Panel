@@ -19,6 +19,28 @@ export type Gender = "male" | "female" | "other";
 export interface BranchSettings {
   requireOrderPrice?: boolean;
   autoAssignOrders?: boolean;
+  // Default price per garment type (PKR) — used by the priceList feature.
+  garmentPrices?: Record<string, number>;
+  // Public appointment booking (appointments feature): on/off + message,
+  // shift hours (HH:00) and hourly slot capacity.
+  appointmentsEnabled?: boolean;
+  appointmentsClosedMessage?: string;
+  appointmentOpenTime?: string;
+  appointmentCloseTime?: string;
+  appointmentsPerHour?: number;
+}
+
+// Per-branch feature flags (backend Branch.features), assigned by the
+// super_admin. Missing = the defaults in src/lib/features.ts.
+export interface BranchFeatures {
+  analytics?: boolean;
+  upcomingDelivery?: boolean;
+  branchSettings?: boolean;
+  priceList?: boolean;
+  whatsappNotify?: boolean;
+  receiptPrinting?: boolean;
+  publicStatusCheck?: boolean;
+  appointments?: boolean;
 }
 
 export interface Branch {
@@ -27,6 +49,7 @@ export interface Branch {
   address?: string;
   phone?: string;
   settings?: BranchSettings;
+  features?: BranchFeatures;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
