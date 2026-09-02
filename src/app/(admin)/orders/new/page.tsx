@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
 import { useAuth } from "@/context/AuthContext";
+import { useDialog } from "@/context/DialogContext";
 import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
 import { hasFeature } from "@/lib/features";
 import type { GarmentType, FabricSource, PaymentMethod } from "@/types/order";
@@ -76,6 +77,7 @@ interface OrderForm {
 export default function NewOrderPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const dialog = useDialog();
   const [loading, setLoading] = useState(false);
 
   // Branch settings (set on the Settings page): whether item prices are
@@ -136,6 +138,26 @@ export default function NewOrderPage() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [measurements, setMeasurements] = useState<Measurement>({});
   const [showHistory, setShowHistory] = useState(false);
+
+  // Suit No is a standing customer attribute now (persists across visits),
+  // not a fresh order-level field — see backend Customer.suitNo. For a FOUND
+  // customer with a number already on file, the field starts locked so it
+  // can't be changed by accident; editing requires an explicit confirm.
+  // `originalSuitNo` is what's on the customer record right now — comparing
+  // form.suitNo against it at submit time is how we know whether to sync.
+  const [originalSuitNo, setOriginalSuitNo] = useState("");
+  const [suitNoLocked, setSuitNoLocked] = useState(false);
+  const requestEditSuitNo = async () => {
+    const message = originalSuitNo
+      ? `"${originalSuitNo}" is ${customer?.name || "this customer"}'s current number — changing it updates their record (the old number is kept as a backup).`
+      : "Are you sure you want to edit the Suit No?";
+    const ok = await dialog.confirm({
+      title: "Edit Suit No",
+      message,
+      confirmText: "Edit",
+    });
+    if (ok) setSuitNoLocked(false);
+  };
 
   // One order can have several items — e.g. 1 Simple Suit + 2 Designing Suits
   // for the same customer visit. Suit No is a single serial for the whole
@@ -210,10 +232,18 @@ export default function NewOrderPage() {
         setCustomer(data.data);
         setMeasurements(data.data.measurements || {});
         setCustomerStatus("found");
+        // Pre-fill from the customer's standing suit no; lock it only when
+        // there's an actual number to protect from accidental edits.
+        const existingSuitNo = data.data.suitNo || "";
+        setOriginalSuitNo(existingSuitNo);
+        setSuitNoLocked(!!existingSuitNo);
+        set("suitNo", existingSuitNo);
         toast.success(`Customer found: ${data.data.name}`);
       } else {
         setCustomerStatus("new");
         setMeasurements({});
+        setOriginalSuitNo("");
+        setSuitNoLocked(false);
         toast("New customer — fill in name & measurements", { icon: "👤" });
       }
     } catch {
@@ -303,6 +333,28 @@ export default function NewOrderPage() {
       toast.error("Enter a price for every item");
       return;
     }
+    // Belt-and-suspenders: the inputs carry min="0"/max={estimatedTotal},
+    // but this form calls preventDefault() and never checks native HTML5
+    // validity, so those attributes are visual only — the real gate is here
+    // (and again on the server, which is the true source of truth).
+    if (items.some((it) => Number(it.basePrice) < 0 || Number(it.fabricAmount) < 0)) {
+      toast.error("Prices cannot be negative");
+      return;
+    }
+    if (Number(form.rushSurcharge) < 0) {
+      toast.error("Rush surcharge cannot be negative");
+      return;
+    }
+    if (Number(form.advancePayment) < 0) {
+      toast.error("Advance payment cannot be negative");
+      return;
+    }
+    if (Number(form.advancePayment) > estimatedTotal) {
+      toast.error(
+        `Advance payment cannot exceed the order total (PKR ${estimatedTotal.toLocaleString()})`,
+      );
+      return;
+    }
     setLoading(true);
     try {
       let customerId = customer?._id;
@@ -317,9 +369,18 @@ export default function NewOrderPage() {
         const { data } = await api.post("/customers", {
           name: newCustomerName.trim(),
           phone: normalizePkMobile(phone) || phone.trim(),
+          // First-time assignment — nothing to back up yet, so this goes
+          // straight into the create call rather than the suit-no endpoint.
+          suitNo: form.suitNo.trim() || undefined,
         });
         customerId = data.data._id;
         setCustomer(data.data);
+      } else if (customerId && form.suitNo.trim() !== originalSuitNo) {
+        // Existing customer whose suit no was actually changed (confirmed
+        // via the edit button) — sync it back, which backs up the old value.
+        await api.put(`/customers/${customerId}/suit-no`, {
+          suitNo: form.suitNo.trim(),
+        });
       }
 
       // Save measurements if any field filled
@@ -346,16 +407,11 @@ export default function NewOrderPage() {
         promisedDate: form.promisedDate,
         isRush: form.isRush,
         rushSurcharge: Number(form.rushSurcharge),
-        notes: form.notes,
         measurements: hasMeasurement ? measurements : undefined,
-        payments: form.advancePayment
-          ? [
-              {
-                amount: Number(form.advancePayment),
-                method: form.paymentMethod,
-              },
-            ]
-          : [],
+        // Advance goes as explicit fields — the server records the payment
+        // itself (date + who recorded it) and recalculates the balance.
+        advancePayment: Number(form.advancePayment) || 0,
+        paymentMethod: form.paymentMethod,
         // Manual staff assignment — all optional. If none picked, order is created
         // as a draft and can be assigned later from the order detail page.
         cuttingMaster: assignment.cuttingMaster || undefined,
@@ -420,6 +476,11 @@ export default function NewOrderPage() {
                   ✅ {customer.name}
                 </p>
                 <p className="text-sm text-green-600 dark:text-green-400">{customer.phone}</p>
+                {customer.suitNo && (
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    Suit No: <span className="font-semibold">{customer.suitNo}</span>
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => setCustomerStatus("")}
@@ -549,14 +610,31 @@ export default function NewOrderPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Suit No
               </label>
-              <input
-                className="input"
-                value={form.suitNo}
-                onChange={(e) => set("suitNo", e.target.value)}
-                placeholder="Shop's serial number for this order"
-              />
+              <div className="flex gap-2">
+                <input
+                  className="input disabled:opacity-60 disabled:cursor-not-allowed"
+                  value={form.suitNo}
+                  onChange={(e) => set("suitNo", e.target.value)}
+                  placeholder="Customer's suit/locker number"
+                  disabled={suitNoLocked}
+                />
+                {suitNoLocked && (
+                  <button
+                    type="button"
+                    onClick={requestEditSuitNo}
+                    className="btn-secondary text-sm px-3 shrink-0"
+                    title="Change this customer's suit no"
+                  >
+                    ✏️ Edit
+                  </button>
+                )}
+              </div>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                One serial for this whole order/customer visit.
+                {suitNoLocked
+                  ? "Auto-filled from the customer's record — click Edit to change it."
+                  : originalSuitNo
+                    ? `Editing — was "${originalSuitNo}". The old number is kept as a backup.`
+                    : "Saved to the customer's record for next time."}
               </p>
             </div>
             <div>
@@ -648,6 +726,7 @@ export default function NewOrderPage() {
                     <input
                       required={branchSettings.requireOrderPrice}
                       type="number"
+                      min="0"
                       className="input text-sm"
                       value={it.basePrice}
                       onChange={(e) =>
@@ -690,6 +769,7 @@ export default function NewOrderPage() {
                     </label>
                     <input
                       type="number"
+                      min="0"
                       className="input text-sm"
                       value={it.fabricAmount}
                       onChange={(e) =>
@@ -732,11 +812,16 @@ export default function NewOrderPage() {
               </label>
               <input
                 type="number"
+                min="0"
+                max={estimatedTotal}
                 className="input"
                 value={form.advancePayment}
                 onChange={(e) => set("advancePayment", e.target.value)}
                 placeholder="0"
               />
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                Cannot exceed the order total (PKR {estimatedTotal.toLocaleString()}).
+              </p>
             </div>
             <div className="flex items-end gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -755,6 +840,7 @@ export default function NewOrderPage() {
           {form.isRush && (
             <input
               type="number"
+              min="0"
               className="input"
               value={form.rushSurcharge}
               onChange={(e) => set("rushSurcharge", e.target.value)}

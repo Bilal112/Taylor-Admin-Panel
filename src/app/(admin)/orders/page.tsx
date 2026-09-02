@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useDialog } from "@/context/DialogContext";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import clsx from "clsx";
@@ -45,6 +46,7 @@ const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
 
 export default function OrdersPage() {
   const { user } = useAuth();
+  const dialog = useDialog();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -95,10 +97,17 @@ export default function OrdersPage() {
   };
 
   // ── Quick actions (orderQuickActions feature) — the three moves an admin
-  // makes all day, straight from the row. window.prompt/confirm keep them to
-  // one tap; the API enforces all the usual rules either way. ──────────────
+  // makes all day, straight from the row, via the themed dialog (DialogContext)
+  // rather than native window.prompt/confirm. The API enforces all the usual
+  // rules either way. ────────────────────────────────────────────────────
   const markReady = async (order: Order) => {
-    const rack = window.prompt("Rack number for this order:", order.rackNumber || "");
+    const rack = await dialog.prompt({
+      title: "Mark as Ready",
+      message: "Enter the rack number for this order.",
+      defaultValue: order.rackNumber || "",
+      placeholder: "e.g. R-5",
+      confirmText: "Mark Ready",
+    });
     if (rack === null) return;
     if (!rack.trim()) {
       toast.error("Rack number is required");
@@ -117,14 +126,26 @@ export default function OrdersPage() {
   };
 
   const collectPayment = async (order: Order) => {
-    const amountStr = window.prompt(
-      `Amount received (balance PKR ${order.balanceDue?.toLocaleString()}):`,
-      String(order.balanceDue || ""),
-    );
+    const balanceDue = order.balanceDue || 0;
+    const amountStr = await dialog.prompt({
+      title: "Collect Payment",
+      message: `Balance due: PKR ${balanceDue.toLocaleString()}`,
+      defaultValue: String(balanceDue || ""),
+      type: "number",
+      min: 1,
+      max: balanceDue,
+      confirmText: "Record Payment",
+    });
     if (amountStr === null) return;
     const amount = Number(amountStr);
     if (!(amount > 0)) {
       toast.error("Enter a valid amount");
+      return;
+    }
+    // The `max` attribute only limits the spinner — a typed value can still
+    // exceed it, so this is the real gate (the API enforces it too).
+    if (amount > balanceDue) {
+      toast.error(`Cannot exceed the balance due (PKR ${balanceDue.toLocaleString()})`);
       return;
     }
     try {
@@ -139,16 +160,23 @@ export default function OrdersPage() {
   const deliverOrder = async (order: Order) => {
     try {
       if ((order.balanceDue || 0) > 0) {
-        const collect = window.confirm(
-          `Balance due is PKR ${order.balanceDue.toLocaleString()}. Collect it as cash and mark delivered?`,
-        );
+        const collect = await dialog.confirm({
+          title: "Collect Balance & Deliver",
+          message: `Balance due is PKR ${order.balanceDue.toLocaleString()}. Collect it as cash and mark delivered?`,
+          confirmText: "Collect & Deliver",
+        });
         if (!collect) return;
         await api.put(`/orders/${order._id}/payment`, {
           amount: order.balanceDue,
           method: "cash",
         });
-      } else if (!window.confirm("Mark this order as delivered?")) {
-        return;
+      } else {
+        const ok = await dialog.confirm({
+          title: "Deliver Order",
+          message: "Mark this order as delivered?",
+          confirmText: "Deliver",
+        });
+        if (!ok) return;
       }
       await api.put(`/orders/${order._id}/status`, { status: "delivered" });
       toast.success("Delivered ✓");

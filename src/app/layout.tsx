@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { DialogProvider } from "@/context/DialogContext";
 import InstallPrompt from "@/components/InstallPrompt";
 
 export const metadata: Metadata = {
@@ -37,9 +38,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
         <ThemeProvider>
           <AuthProvider>
-            {children}
-            <Toaster position="top-right" />
-            <InstallPrompt />
+            <DialogProvider>
+              {children}
+              <Toaster position="top-right" />
+              <InstallPrompt />
+            </DialogProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

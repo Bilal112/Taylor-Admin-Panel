@@ -2,6 +2,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useDialog } from "@/context/DialogContext";
 import toast from "react-hot-toast";
 import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
 import { errorMessage } from "@/lib/errorMessage";
@@ -43,6 +44,7 @@ const emptyForm: StaffForm = {
 
 export default function StaffPage() {
   const { user } = useAuth();
+  const dialog = useDialog();
   const [staff, setStaff] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,7 +140,13 @@ export default function StaffPage() {
   const canToggleActive = (m: User) => m._id !== user?._id;
 
   const deleteStaff = async (m: User) => {
-    if (!confirm(`Permanently delete ${m.name}? This cannot be undone.`)) return;
+    const ok = await dialog.confirm({
+      title: "Delete Staff",
+      message: `Permanently delete ${m.name}? This cannot be undone.`,
+      confirmText: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api.delete(`/staff/${m._id}`);
       setStaff((s) => s.filter((x) => x._id !== m._id));

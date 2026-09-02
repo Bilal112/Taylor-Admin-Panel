@@ -44,6 +44,7 @@ export default function CustomerDetailPage() {
   const [measurements, setMeasurements] = useState<Measurement>({});
   const [editInfo, setEditInfo] = useState(false);
   const [info, setInfo] = useState<InfoForm>({ name: "", phone: "", email: "", address: "" });
+  const [showSuitHistory, setShowSuitHistory] = useState(false);
 
   useEffect(() => {
     if (!isValidObjectId(id)) {
@@ -169,6 +170,43 @@ export default function CustomerDetailPage() {
               <span className="text-gray-400 dark:text-gray-500">Address:</span>{" "}
               {customer.address || "—"}
             </div>
+            <div className="sm:col-span-2">
+              <span className="text-gray-400 dark:text-gray-500">Suit No:</span>{" "}
+              {customer.suitNo || "—"}
+              <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
+                (set on the New Order page)
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Suit No history — a read-only backup trail; the number itself is
+            only ever changed from the New Order page's confirm-gated editor. */}
+        {!!customer.suitNoHistory?.length && (
+          <div>
+            <button
+              onClick={() => setShowSuitHistory((v) => !v)}
+              className="text-xs text-primary hover:underline"
+            >
+              {showSuitHistory ? "Hide" : "Show"} suit no history (
+              {customer.suitNoHistory.length} previous)
+            </button>
+            {showSuitHistory && (
+              <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                {customer.suitNoHistory.map((h, i) => (
+                  <div
+                    key={h._id || i}
+                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded px-2 py-1 text-xs text-gray-600 dark:text-gray-400"
+                  >
+                    <span className="font-mono">{h.suitNo}</span>
+                    <span>
+                      {h.changedAt ? new Date(h.changedAt).toLocaleDateString() : "Unknown date"}
+                      {typeof h.changedBy === "object" && h.changedBy?.name && ` — by ${h.changedBy.name}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

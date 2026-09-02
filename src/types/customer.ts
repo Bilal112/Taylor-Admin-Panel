@@ -18,6 +18,13 @@ export interface Measurement {
   takenAt?: string;
 }
 
+export interface SuitNoHistoryEntry {
+  _id?: string;
+  suitNo: string;
+  changedAt?: string;
+  changedBy?: string | { _id: string; name: string };
+}
+
 export interface Customer {
   _id: string;
   branch: string | { _id: string; name: string };
@@ -28,6 +35,10 @@ export interface Customer {
   gender?: Gender;
   measurements?: Measurement;
   measurementHistory?: Measurement[];
+  // Standing suit/locker number — persists across visits. See
+  // SuitNoHistoryEntry for the backup trail of previous values.
+  suitNo?: string;
+  suitNoHistory?: SuitNoHistoryEntry[];
   notes?: string;
   isActive?: boolean;
   createdAt?: string;

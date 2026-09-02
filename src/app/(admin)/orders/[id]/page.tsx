@@ -133,6 +133,21 @@ export default function OrderDetailPage() {
 
   const saveEdit = async () => {
     if (!order || !editForm) return;
+    // min="0" on these inputs is visual only (spinner-only, doesn't block a
+    // typed negative) — this is the real client-side gate; the API enforces
+    // it too.
+    if (
+      editForm.items.some(
+        (it) => Number(it.basePrice) < 0 || Number(it.fabricAmount) < 0,
+      )
+    ) {
+      toast.error("Prices cannot be negative");
+      return;
+    }
+    if (Number(editForm.rushSurcharge) < 0 || Number(editForm.discountAmount) < 0) {
+      toast.error("Rush surcharge and discount cannot be negative");
+      return;
+    }
     try {
       await api.put(`/orders/${order._id}`, {
         suitNo: editForm.suitNo || undefined,
@@ -337,17 +352,28 @@ export default function OrderDetailPage() {
 
   const addPayment = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const amount = Number(payment.amount);
+    if (!(amount > 0)) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    // `max` on the input only limits the spinner — a typed value can still
+    // exceed it, so this is the real client-side gate (the API enforces it too).
+    if (order && amount > order.balanceDue) {
+      toast.error(`Cannot exceed the balance due (PKR ${order.balanceDue.toLocaleString()})`);
+      return;
+    }
     setPaying(true);
     try {
       await api.put(`/orders/${id}/payment`, {
-        amount: Number(payment.amount),
+        amount,
         method: payment.method,
       });
       toast.success("Payment recorded");
       setPayment({ amount: "", method: "cash" });
       fetchOrder();
-    } catch {
-      toast.error("Failed");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to record payment"));
     } finally {
       setPaying(false);
     }
@@ -990,8 +1016,10 @@ export default function OrderDetailPage() {
               <input
                 type="number"
                 required
+                min="1"
+                max={order.balanceDue}
                 className="input flex-1 min-w-[120px] text-sm"
-                placeholder="Amount"
+                placeholder={`Amount (max ${order.balanceDue.toLocaleString()})`}
                 value={payment.amount}
                 onChange={(e) =>
                   setPayment({ ...payment, amount: e.target.value })

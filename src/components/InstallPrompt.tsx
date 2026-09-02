@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// Mobile-only "Install the app" banner for the PWA. Android/Chrome exposes a
-// real install flow via the beforeinstallprompt event; iOS Safari has no
-// install API, so there we show the manual Share → Add to Home Screen steps.
-// Never shown on desktop, inside the installed app, or again after dismissal
+// "Install the app" banner for the PWA — mobile AND desktop. Chrome/Edge
+// (Android and desktop alike) expose a real install flow via the
+// beforeinstallprompt event; iOS Safari has no install API, so iPhones/iPads
+// get the manual Share → Add to Home Screen steps instead. Browsers with no
+// install support (desktop Safari/Firefox) simply never show the banner.
+// Never shown inside the installed app, or again after dismissal
 // (remembered per device in localStorage).
 
 interface BeforeInstallPromptEvent extends Event {
@@ -32,8 +34,6 @@ export default function InstallPrompt() {
     if (standalone) return;
 
     const ua = window.navigator.userAgent;
-    if (!/Android|iPhone|iPad|iPod/i.test(ua)) return; // mobile browsers only
-
     if (/iPhone|iPad|iPod/i.test(ua)) {
       setShowIos(true);
       setVisible(true);
@@ -72,7 +72,7 @@ export default function InstallPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="md:hidden no-print fixed bottom-3 inset-x-3 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-3 flex items-center gap-3">
+    <div className="no-print fixed bottom-3 inset-x-3 md:inset-x-auto md:right-4 md:bottom-4 md:max-w-sm z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-3 flex items-center gap-3">
       <span className="text-2xl" aria-hidden="true">
         ✂️
       </span>
