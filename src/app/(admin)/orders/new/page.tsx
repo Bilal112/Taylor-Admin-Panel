@@ -184,9 +184,13 @@ export default function NewOrderPage() {
     setItems((list) =>
       list.map((it, i) => (i === idx ? { ...it, [k]: v } : it)),
     );
-  // Selecting a garment type auto-fills its default price from the branch
-  // price list (priceList feature) — only when no price was typed on that
-  // line yet, so a manual price is never overwritten.
+  // Selecting a garment type syncs the price to ITS default from the branch
+  // price list (priceList feature). Always syncs on every change — not just
+  // when the field was empty — so switching from one type to another
+  // updates the price too, instead of leaving the previous type's price
+  // behind. Falls back to blank when the newly picked type has no default
+  // (or the type is cleared back to "Select item…"), since a stale price
+  // from a different garment is worse than an empty field asking to be filled.
   const pickGarment = (idx: number, g: ItemForm["garmentType"]) =>
     setItems((list) =>
       list.map((it, i) => {
@@ -195,8 +199,7 @@ export default function NewOrderPage() {
         return {
           ...it,
           garmentType: g,
-          basePrice:
-            !it.basePrice && def !== undefined ? String(def) : it.basePrice,
+          basePrice: def !== undefined ? String(def) : "",
         };
       }),
     );

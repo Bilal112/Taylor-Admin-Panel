@@ -11,7 +11,12 @@ import { errorMessage } from "@/lib/errorMessage";
 import { isValidObjectId } from "@/lib/validate";
 import { hasFeature } from "@/lib/features";
 import { waLink } from "@/lib/whatsapp";
-import type { Order, OrderStatus, PaymentMethod } from "@/types/order";
+import type {
+  Order,
+  OrderStatus,
+  PaymentMethod,
+  StaffRef,
+} from "@/types/order";
 import type { Measurement } from "@/types/customer";
 import type { User, UserRole } from "@/types/user";
 
@@ -34,13 +39,20 @@ const STATUS_FLOW: OrderStatus[] = [
 const STATUS_COLORS: Partial<Record<OrderStatus, string>> = {
   draft: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
   received: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  cutting: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-  cutting_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  stitching: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  stitching_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  pressing: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
-  pressing_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  quality_check: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300",
+  cutting:
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+  cutting_review:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  stitching:
+    "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  stitching_review:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  pressing:
+    "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
+  pressing_review:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  quality_check:
+    "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300",
   ready: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   delivered: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
   rework: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
@@ -61,9 +73,26 @@ const STAFF_ROLES: [StaffField, string, string][] = [
   ["presser", "presser", "🔥 Press Man"],
 ];
 
+// Assignment History card — field/source labels for the audit trail of
+// every staff (re)assignment on this order (backend: assignmentHistory).
+const ASSIGNMENT_FIELD_LABELS: Record<string, string> = {
+  cuttingMaster: "✂️ Cutting Master",
+  stitcher: "🧵 Stitcher",
+  presser: "🔥 Press Man",
+  stockManager: "📦 Stock Manager",
+};
+const ASSIGNMENT_SOURCE_LABELS: Record<string, string> = {
+  create: "set at order creation",
+  assign: "assigned",
+  edit: "reassigned",
+  auto: "auto-assigned",
+};
+
 // Staff submit their finished work for review — Checker then approves/rejects
 // via the separate /review endpoint, not this table.
-const ROLE_TRANSITIONS: Partial<Record<UserRole, Partial<Record<OrderStatus, OrderStatus>>>> = {
+const ROLE_TRANSITIONS: Partial<
+  Record<UserRole, Partial<Record<OrderStatus, OrderStatus>>>
+> = {
   cutting_master: { received: "cutting", cutting: "cutting_review" },
   stitcher: { stitching: "stitching_review" },
   presser: { pressing: "pressing_review" },
@@ -92,7 +121,12 @@ const MEASUREMENT_FIELDS: [keyof Measurement, string][] = [
   ["height", "Height"],
 ];
 
-const PAYMENT_METHODS: PaymentMethod[] = ["cash", "card", "bank_transfer", "mobile_money"];
+const PAYMENT_METHODS: PaymentMethod[] = [
+  "cash",
+  "card",
+  "bank_transfer",
+  "mobile_money",
+];
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -110,7 +144,22 @@ export default function OrderDetailPage() {
     discountAmount: string;
     styleNotes: string;
     items: { quantity: string; basePrice: string; fabricAmount: string }[];
+    // Staff reassignment — editable here regardless of order status (unlike
+    // the draft-only activation form below, which only ever sets these once).
+    cuttingMaster: string;
+    stitcher: string;
+    presser: string;
+    stockManager: string;
   } | null>(null);
+  // Active stock managers for the Edit form's dropdown — kept separate from
+  // `staffByRole` (cutting/stitcher/presser only) since stock manager isn't
+  // part of the draft-activation trio that state was originally built for.
+  const [stockManagerStaff, setStockManagerStaff] = useState<User[]>([]);
+
+  // Extract the id string from a possibly-populated staff ref — matches the
+  // populated-vs-raw-id handling used throughout this file.
+  const staffRefId = (ref: StaffRef | undefined): string =>
+    typeof ref === "object" && ref ? ref._id : (ref as string) || "";
 
   const startEdit = () => {
     if (!order) return;
@@ -127,6 +176,10 @@ export default function OrderDetailPage() {
         basePrice: String(it.basePrice || 0),
         fabricAmount: String(it.fabricAmount || 0),
       })),
+      cuttingMaster: staffRefId(order.cuttingMaster),
+      stitcher: staffRefId(order.stitcher),
+      presser: staffRefId(order.presser),
+      stockManager: staffRefId(order.stockManager),
     });
     setEditing(true);
   };
@@ -144,14 +197,19 @@ export default function OrderDetailPage() {
       toast.error("Prices cannot be negative");
       return;
     }
-    if (Number(editForm.rushSurcharge) < 0 || Number(editForm.discountAmount) < 0) {
+    if (
+      Number(editForm.rushSurcharge) < 0 ||
+      Number(editForm.discountAmount) < 0
+    ) {
       toast.error("Rush surcharge and discount cannot be negative");
       return;
     }
     try {
       await api.put(`/orders/${order._id}`, {
         suitNo: editForm.suitNo || undefined,
-        ...(editForm.promisedDate ? { promisedDate: editForm.promisedDate } : {}),
+        ...(editForm.promisedDate
+          ? { promisedDate: editForm.promisedDate }
+          : {}),
         rushSurcharge: Number(editForm.rushSurcharge) || 0,
         discountAmount: Number(editForm.discountAmount) || 0,
         styleNotes: editForm.styleNotes,
@@ -161,6 +219,12 @@ export default function OrderDetailPage() {
           basePrice: Number(editForm.items[i]?.basePrice) || 0,
           fabricAmount: Number(editForm.items[i]?.fabricAmount) || 0,
         })),
+        // Staff reassignment — empty string un-assigns; the API validates
+        // any id against role + branch + active status.
+        cuttingMaster: editForm.cuttingMaster || null,
+        stitcher: editForm.stitcher || null,
+        presser: editForm.presser || null,
+        stockManager: editForm.stockManager || null,
       });
       setEditing(false);
       toast.success("Order updated — totals recalculated");
@@ -171,7 +235,10 @@ export default function OrderDetailPage() {
   };
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [payment, setPayment] = useState<{ amount: string; method: PaymentMethod }>({ amount: "", method: "cash" });
+  const [payment, setPayment] = useState<{
+    amount: string;
+    method: PaymentMethod;
+  }>({ amount: "", method: "cash" });
   const [paying, setPaying] = useState(false);
   // Marking Ready requires a rack number entered right there — separate from
   // the "Save Rack" button on the Rack card below, which is just a plain save.
@@ -179,7 +246,9 @@ export default function OrderDetailPage() {
   const [markingReady, setMarkingReady] = useState(false);
 
   // Draft-only staff assignment
-  const [staffByRole, setStaffByRole] = useState<Partial<Record<StaffField, User[]>>>({});
+  const [staffByRole, setStaffByRole] = useState<
+    Partial<Record<StaffField, User[]>>
+  >({});
   const [assignment, setAssignment] = useState<Record<StaffField, string>>({
     cuttingMaster: "",
     stitcher: "",
@@ -219,9 +288,13 @@ export default function OrderDetailPage() {
     if (order?.rackNumber) setReadyRackNum(order.rackNumber);
   }, [order?.rackNumber]);
 
-  // Load assignable staff once we know this order is a draft
+  // Assignable staff lists — needed by the draft-only activation form below
+  // AND by the Edit Order form's staff-reassignment fields (which apply to
+  // an order in any status, not just draft), so this loads for any admin
+  // viewing any order rather than gating on order.status.
   useEffect(() => {
-    if (order?.status !== "draft") return;
+    if (!order || !user || !["super_admin", "admin"].includes(user.role))
+      return;
     Promise.all(
       STAFF_ROLES.map(([, role]) => api.get("/staff", { params: { role } })),
     )
@@ -232,13 +305,25 @@ export default function OrderDetailPage() {
         });
         setStaffByRole(map);
       })
-      .catch((err) => toast.error(errorMessage(err, "Failed to load staff list")));
-  }, [order?.status]);
+      .catch((err) =>
+        toast.error(errorMessage(err, "Failed to load staff list")),
+      );
+    api
+      .get("/staff", { params: { role: "stock_manager" } })
+      .then(({ data }) =>
+        setStockManagerStaff(data.data.filter((s: User) => s.isActive)),
+      )
+      .catch(() => {});
+  }, [order?._id, user?.role]);
 
   const saveAssignment = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Activation needs the full trio — same rule as the backend.
-    if (!assignment.cuttingMaster || !assignment.stitcher || !assignment.presser) {
+    if (
+      !assignment.cuttingMaster ||
+      !assignment.stitcher ||
+      !assignment.presser
+    ) {
       toast.error(
         "Select all three — Cutting Master, Stitcher and Press Man — to activate this order",
       );
@@ -311,13 +396,18 @@ export default function OrderDetailPage() {
       );
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(axiosErr.response?.data?.message || "Failed to submit review");
+      toast.error(
+        axiosErr.response?.data?.message || "Failed to submit review",
+      );
     } finally {
       setReviewing(false);
     }
   };
 
-  const advanceStatus = async (nextStatus: OrderStatus, extra: Record<string, unknown> = {}) => {
+  const advanceStatus = async (
+    nextStatus: OrderStatus,
+    extra: Record<string, unknown> = {},
+  ) => {
     try {
       await api.put(`/orders/${id}/status`, { status: nextStatus, ...extra });
       toast.success(`Status → ${nextStatus.replace(/_/g, " ")}`);
@@ -344,7 +434,9 @@ export default function OrderDetailPage() {
       fetchOrder();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(axiosErr.response?.data?.message || "Failed to mark as ready");
+      toast.error(
+        axiosErr.response?.data?.message || "Failed to mark as ready",
+      );
     } finally {
       setMarkingReady(false);
     }
@@ -360,7 +452,9 @@ export default function OrderDetailPage() {
     // `max` on the input only limits the spinner — a typed value can still
     // exceed it, so this is the real client-side gate (the API enforces it too).
     if (order && amount > order.balanceDue) {
-      toast.error(`Cannot exceed the balance due (PKR ${order.balanceDue.toLocaleString()})`);
+      toast.error(
+        `Cannot exceed the balance due (PKR ${order.balanceDue.toLocaleString()})`,
+      );
       return;
     }
     setPaying(true);
@@ -419,7 +513,8 @@ export default function OrderDetailPage() {
   const nextStatus = getNextStatus();
 
   // Measurements — from order snapshot, fallback to customer's saved measurements
-  const orderCustomer = typeof order.customer === "object" ? order.customer : null;
+  const orderCustomer =
+    typeof order.customer === "object" ? order.customer : null;
   const customerMeasurements =
     orderCustomer && "measurements" in orderCustomer
       ? (orderCustomer as { measurements?: Measurement }).measurements
@@ -444,7 +539,9 @@ export default function OrderDetailPage() {
               {STATUS_LABELS[order.status] || order.status?.replace(/_/g, " ")}
             </span>
             {order.isRush && (
-              <span className="badge bg-red-500 dark:bg-red-600 text-white">RUSH</span>
+              <span className="badge bg-red-500 dark:bg-red-600 text-white">
+                RUSH
+              </span>
             )}
             {order.isPickedUp && (
               <span className="badge bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
@@ -472,11 +569,14 @@ export default function OrderDetailPage() {
                 🔁 Repeat
               </Link>
             )}
-          {isAdmin && hasFeature(user, "orderEdit") && !editing && (
-            <button onClick={startEdit} className="btn-secondary text-sm">
-              ✏️ Edit
-            </button>
-          )}
+          {order.status != "ready" &&
+            isAdmin &&
+            hasFeature(user, "orderEdit") &&
+            !editing && (
+              <button onClick={startEdit} className="btn-secondary text-sm">
+                ✏️ Edit
+              </button>
+            )}
           {isAdmin && hasFeature(user, "receiptPrinting") && (
             <Link
               href={`/orders/${order._id}/receipt`}
@@ -551,26 +651,33 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-      {/* ── Draft: assign staff to activate the order — admin only ── */}
+      {/* ── Draft: assign staff to activate the order — admin only. Always
+          shown (manual dropdowns + Assign & Activate); only the ⚡ Auto
+          Assign shortcut below is feature-gated (draftAutoAssign,
+          super_admin toggle, Settings → Features). ── */}
       {isAdmin && order.status === "draft" && (
         <div className="card space-y-4 border-2 border-dashed border-primary/30">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-gray-700 dark:text-gray-300">
               📝 Assign Staff to Activate
             </h2>
-            <button
-              type="button"
-              onClick={autoAssign}
-              disabled={autoAssigning}
-              className="btn-secondary text-xs"
-            >
-              {autoAssigning ? "Assigning…" : "⚡ Auto Assign"}
-            </button>
+            {hasFeature(user, "draftAutoAssign") && (
+              <button
+                type="button"
+                onClick={autoAssign}
+                disabled={autoAssigning}
+                className="btn-secondary text-xs"
+              >
+                {autoAssigning ? "Assigning…" : "⚡ Auto Assign"}
+              </button>
+            )}
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
             This order is a draft and won&apos;t show up for staff until all
             three roles — Cutting Master, Stitcher and Press Man — are
-            assigned. Auto Assign only picks staff with login access.
+            assigned.
+            {hasFeature(user, "draftAutoAssign") &&
+              " Auto Assign only picks staff with login access."}
           </p>
           <form
             onSubmit={saveAssignment}
@@ -629,14 +736,18 @@ export default function OrderDetailPage() {
           <p className="font-semibold text-red-800 dark:text-red-300 mb-1">
             🔁 Sent back by Checker for rework
           </p>
-          <p className="text-red-700 dark:text-red-400 italic">{order.checkerRemark}</p>
+          <p className="text-red-700 dark:text-red-400 italic">
+            {order.checkerRemark}
+          </p>
         </div>
       )}
 
       {/* ── Checker: approve or reject a stage submitted for review ── */}
       {(isChecker || isAdmin) && isReviewStage && (
         <div className="card space-y-3 border-2 border-dashed border-amber-300 dark:border-amber-700">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">🔍 Review Required</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+            🔍 Review Required
+          </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {STATUS_LABELS[order.status]} — inspect the work for this stage,
             then approve to pass it on or reject to send it back for rework.
@@ -702,7 +813,9 @@ export default function OrderDetailPage() {
                 className="input text-sm"
                 value={editForm.promisedDate}
                 onChange={(e) =>
-                  setEditForm((f) => f && { ...f, promisedDate: e.target.value })
+                  setEditForm(
+                    (f) => f && { ...f, promisedDate: e.target.value },
+                  )
                 }
               />
             </div>
@@ -716,7 +829,9 @@ export default function OrderDetailPage() {
                 className="input text-sm"
                 value={editForm.rushSurcharge}
                 onChange={(e) =>
-                  setEditForm((f) => f && { ...f, rushSurcharge: e.target.value })
+                  setEditForm(
+                    (f) => f && { ...f, rushSurcharge: e.target.value },
+                  )
                 }
               />
             </div>
@@ -730,7 +845,9 @@ export default function OrderDetailPage() {
                 className="input text-sm"
                 value={editForm.discountAmount}
                 onChange={(e) =>
-                  setEditForm((f) => f && { ...f, discountAmount: e.target.value })
+                  setEditForm(
+                    (f) => f && { ...f, discountAmount: e.target.value },
+                  )
                 }
               />
             </div>
@@ -792,6 +909,63 @@ export default function OrderDetailPage() {
               }
             />
           </div>
+
+          <hr className="border-gray-100 dark:border-gray-800" />
+          <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+            Staff Assignment
+          </h3>
+          <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
+            Reassign who&apos;s responsible for this order — e.g. if the
+            assigned staff member is unavailable. Doesn&apos;t change the
+            order&apos;s status.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {STAFF_ROLES.map(([field, , label]) => (
+              <div key={field}>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {label}
+                </label>
+                <select
+                  className="input"
+                  value={editForm[field]}
+                  onChange={(e) =>
+                    setEditForm((f) => f && { ...f, [field]: e.target.value })
+                  }
+                >
+                  <option value="">Unassigned</option>
+                  {(staffByRole[field] || []).map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name}
+                      {!s.hasLogin ? " (no login)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                📦 Stock Manager
+              </label>
+              <select
+                className="input"
+                value={editForm.stockManager}
+                onChange={(e) =>
+                  setEditForm(
+                    (f) => f && { ...f, stockManager: e.target.value },
+                  )
+                }
+              >
+                <option value="">Unassigned</option>
+                {stockManagerStaff.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name}
+                    {!s.hasLogin ? " (no login)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="flex gap-3">
             <button onClick={saveEdit} className="btn-primary text-sm">
               Save Changes
@@ -809,15 +983,25 @@ export default function OrderDetailPage() {
       {/* ── Customer info — admin only ── */}
       {canSeeCustomerInfo && (
         <div className="card space-y-3">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">Customer</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+            Customer
+          </h2>
           <div>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{orderCustomer?.name}</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500">
-              {orderCustomer && "phone" in orderCustomer ? String(orderCustomer.phone ?? "") : ""}
+            <p className="font-medium text-gray-900 dark:text-gray-100">
+              {orderCustomer?.name}
             </p>
-            {orderCustomer && "address" in orderCustomer && (orderCustomer as { address?: string }).address && (
-              <p className="text-sm text-gray-400 dark:text-gray-500">{(orderCustomer as { address?: string }).address}</p>
-            )}
+            <p className="text-sm text-gray-400 dark:text-gray-500">
+              {orderCustomer && "phone" in orderCustomer
+                ? String(orderCustomer.phone ?? "")
+                : ""}
+            </p>
+            {orderCustomer &&
+              "address" in orderCustomer &&
+              (orderCustomer as { address?: string }).address && (
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  {(orderCustomer as { address?: string }).address}
+                </p>
+              )}
             {/* One-click "order ready" WhatsApp message (whatsappNotify feature) */}
             {hasFeature(user, "whatsappNotify") &&
               order.status === "ready" &&
@@ -845,7 +1029,9 @@ export default function OrderDetailPage() {
 
       {/* ── Order details — everyone sees this ── */}
       <div className="card space-y-3">
-        <h2 className="font-semibold text-gray-700 dark:text-gray-300">Order Details</h2>
+        <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+          Order Details
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
           <p>
             <span className="text-gray-400 dark:text-gray-500">Suit No:</span>{" "}
@@ -877,15 +1063,22 @@ export default function OrderDetailPage() {
 
       {/* ── Items — one order can have multiple item lines ── */}
       <div className="card space-y-3">
-        <h2 className="font-semibold text-gray-700 dark:text-gray-300">Items</h2>
+        <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+          Items
+        </h2>
         <div className="space-y-2">
           {(order.items || []).map((it, i) => (
-            <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm">
+            <div
+              key={i}
+              className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm"
+            >
               <div className="flex items-center justify-between">
                 <span className="font-medium text-gray-800 dark:text-gray-200">
                   {it.garmentType}
                 </span>
-                <span className="text-gray-500 dark:text-gray-400">Qty: {it.quantity || 1}</span>
+                <span className="text-gray-500 dark:text-gray-400">
+                  Qty: {it.quantity || 1}
+                </span>
               </div>
               <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                 Fabric: {it.fabric || "—"} · Source:{" "}
@@ -923,7 +1116,9 @@ export default function OrderDetailPage() {
                     key={k}
                     className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center"
                   >
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{label}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {label}
+                    </p>
                     <p className="font-bold text-gray-800 dark:text-gray-200">
                       {String(measurements[k])}"
                     </p>
@@ -947,10 +1142,14 @@ export default function OrderDetailPage() {
       {/* ── Billing — admin only ── */}
       {canSeePricing && (
         <div className="card space-y-3">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">Billing</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+            Billing
+          </h2>
           <div className="text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-gray-400 dark:text-gray-500">Items Subtotal</span>
+              <span className="text-gray-400 dark:text-gray-500">
+                Items Subtotal
+              </span>
               <span>
                 PKR{" "}
                 {(
@@ -966,7 +1165,9 @@ export default function OrderDetailPage() {
             </div>
             {!!order.rushSurcharge && order.rushSurcharge > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-gray-500">Rush Surcharge</span>
+                <span className="text-gray-400 dark:text-gray-500">
+                  Rush Surcharge
+                </span>
                 <span className="text-red-500 dark:text-red-400">
                   +PKR {order.rushSurcharge?.toLocaleString()}
                 </span>
@@ -974,7 +1175,9 @@ export default function OrderDetailPage() {
             )}
             {!!order.discountAmount && order.discountAmount > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-gray-500">Discount</span>
+                <span className="text-gray-400 dark:text-gray-500">
+                  Discount
+                </span>
                 <span className="text-green-600 dark:text-green-400">
                   -PKR {order.discountAmount?.toLocaleString()}
                 </span>
@@ -994,7 +1197,9 @@ export default function OrderDetailPage() {
               <span>Balance Due</span>
               <span
                 className={
-                  order.balanceDue > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                  order.balanceDue > 0
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-green-600 dark:text-green-400"
                 }
               >
                 PKR {order.balanceDue?.toLocaleString()}
@@ -1004,7 +1209,10 @@ export default function OrderDetailPage() {
           {order.payments?.length > 0 && (
             <div className="text-xs space-y-1 bg-gray-50 dark:bg-gray-800 rounded p-2">
               {order.payments.map((p, i) => (
-                <div key={i} className="flex justify-between text-gray-500 dark:text-gray-400">
+                <div
+                  key={i}
+                  className="flex justify-between text-gray-500 dark:text-gray-400"
+                >
                   <span>{p.method?.replace(/_/g, " ")}</span>
                   <span>PKR {p.amount?.toLocaleString()}</span>
                 </div>
@@ -1029,7 +1237,10 @@ export default function OrderDetailPage() {
                 className="input w-full sm:w-32 text-sm"
                 value={payment.method}
                 onChange={(e) =>
-                  setPayment({ ...payment, method: e.target.value as PaymentMethod })
+                  setPayment({
+                    ...payment,
+                    method: e.target.value as PaymentMethod,
+                  })
                 }
               >
                 {PAYMENT_METHODS.map((m) => (
@@ -1053,7 +1264,9 @@ export default function OrderDetailPage() {
       {/* ── Staff Assignment — admin only ── */}
       {canSeeStaffAssignment && (
         <div className="card">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Staff Assignment</h2>
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            Staff Assignment
+          </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
             {(
               [
@@ -1063,11 +1276,18 @@ export default function OrderDetailPage() {
                 ["📦 Stock Manager", order.stockManager],
               ] as [string, Order["cuttingMaster"]][]
             ).map(([r, s]) => (
-              <div key={r} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{r}</p>
+              <div
+                key={r}
+                className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+              >
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+                  {r}
+                </p>
                 <p className="font-medium">
                   {(typeof s === "object" && s?.name) || (
-                    <span className="text-gray-300 dark:text-gray-600 text-xs">Unassigned</span>
+                    <span className="text-gray-300 dark:text-gray-600 text-xs">
+                      Unassigned
+                    </span>
                   )}
                 </p>
               </div>
@@ -1078,7 +1298,9 @@ export default function OrderDetailPage() {
 
       {/* ── Status History — everyone sees ── */}
       <div className="card">
-        <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Status History</h2>
+        <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          Status History
+        </h2>
         <div className="space-y-2">
           {order.statusHistory?.map((h, i) => (
             <div
@@ -1100,12 +1322,58 @@ export default function OrderDetailPage() {
                 </span>
               )}
               {h.note && (
-                <span className="text-gray-400 dark:text-gray-500 italic text-xs">{h.note}</span>
+                <span className="text-gray-400 dark:text-gray-500 italic text-xs">
+                  {h.note}
+                </span>
               )}
             </div>
           ))}
         </div>
       </div>
+
+      {/* ── Assignment History — same audience as the Staff Assignment card ── */}
+      {canSeeStaffAssignment && !!order.assignmentHistory?.length && (
+        <div className="card">
+          <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            Assignment History
+          </h2>
+          <div className="space-y-2">
+            {[...order.assignmentHistory]
+              .reverse()
+              .map((h, i) => {
+                const nameOf = (ref: typeof h.fromStaff) =>
+                  (typeof ref === "object" && ref?.name) || null;
+                const from = nameOf(h.fromStaff);
+                const to = nameOf(h.toStaff);
+                return (
+                  <div
+                    key={i}
+                    className="flex flex-wrap gap-x-3 gap-y-1 text-sm items-start"
+                  >
+                    <span className="text-gray-400 dark:text-gray-500 text-xs w-28 sm:w-32 shrink-0 mt-0.5">
+                      {h.changedAt
+                        ? format(new Date(h.changedAt), "dd MMM HH:mm")
+                        : ""}
+                    </span>
+                    <span className="font-medium">
+                      {ASSIGNMENT_FIELD_LABELS[h.field] || h.field}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {from ? `${from} → ` : ""}
+                      {to || "Unassigned"}
+                    </span>
+                    <span className="text-gray-400 dark:text-gray-500 text-xs">
+                      {ASSIGNMENT_SOURCE_LABELS[h.source] || h.source}
+                      {(typeof h.changedBy === "object" && h.changedBy?.name &&
+                        ` by ${h.changedBy.name}`) ||
+                        ""}
+                    </span>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

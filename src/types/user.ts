@@ -41,6 +41,7 @@ export interface BranchFeatures {
   receiptPrinting?: boolean;
   publicStatusCheck?: boolean;
   appointments?: boolean;
+  draftAutoAssign?: boolean;
   appointmentLoop?: boolean;
   collections?: boolean;
   dailySummary?: boolean;

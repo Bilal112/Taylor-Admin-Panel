@@ -58,6 +58,20 @@ export interface StatusHistoryEntry {
 // unpopulated.
 export type StaffRef = string | { _id: string; name: string; phone?: string };
 
+// "assign"/"edit" are deliberate admin decisions; "create"/"auto" are
+// workflow-driven (initial pick at order creation, a staff member
+// self-assigning by submitting their work, or the workload balancer).
+export type AssignmentSource = "create" | "assign" | "edit" | "auto";
+
+export interface AssignmentHistoryEntry {
+  field: "cuttingMaster" | "stitcher" | "presser" | "stockManager";
+  fromStaff?: string | { _id: string; name: string };
+  toStaff?: string | { _id: string; name: string };
+  changedBy?: string | { _id: string; name: string };
+  changedAt: string;
+  source: AssignmentSource;
+}
+
 export interface Order {
   _id: string;
   branch: string | { _id: string; name: string; phone?: string; address?: string };
@@ -70,6 +84,7 @@ export interface Order {
   measurements?: unknown;
   status: OrderStatus;
   statusHistory: StatusHistoryEntry[];
+  assignmentHistory?: AssignmentHistoryEntry[];
   checkerRemark?: string;
   cuttingMaster?: StaffRef;
   stitcher?: StaffRef;

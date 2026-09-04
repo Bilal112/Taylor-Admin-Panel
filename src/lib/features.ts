@@ -54,6 +54,12 @@ export const FEATURES = {
       "Customers can book a visit online; the admin manages the day's list, shift hours and slot capacity.",
     default: true,
   },
+  draftAutoAssign: {
+    label: "Draft Auto-Assign Button",
+    description:
+      "The '⚡ Auto Assign' shortcut on a draft order's page, which fills every unpicked role by workload with one click. Off = staff must always be assigned by hand from the dropdowns — the dropdowns and 'Assign & Activate' stay available either way, this only hides the shortcut.",
+    default: true,
+  },
   // Premium features below default OFF: the super_admin grants them per
   // branch explicitly.
   appointmentLoop: {
