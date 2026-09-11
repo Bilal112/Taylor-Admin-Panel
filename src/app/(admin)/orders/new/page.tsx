@@ -381,6 +381,7 @@ export default function NewOrderPage() {
       } else if (customerId && form.suitNo.trim() !== originalSuitNo) {
         // Existing customer whose suit no was actually changed (confirmed
         // via the edit button) — sync it back, which backs up the old value.
+        console.log("Syncing suit no change to customer record");
         await api.put(`/customers/${customerId}/suit-no`, {
           suitNo: form.suitNo.trim(),
         });
