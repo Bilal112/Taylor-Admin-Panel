@@ -89,7 +89,9 @@ export default function NewOrderPage() {
     autoAssignOrders: false,
   });
   // Branch price list (priceList feature) — garmentType -> default PKR price.
-  const [garmentPrices, setGarmentPrices] = useState<Record<string, number>>({});
+  const [garmentPrices, setGarmentPrices] = useState<Record<string, number>>(
+    {},
+  );
   useEffect(() => {
     if (!user || user.role !== "admin") return;
     api
@@ -108,7 +110,9 @@ export default function NewOrderPage() {
       })
       .catch(() => {}); // fall back to defaults silently
   }, [user]);
-  const [staffByRole, setStaffByRole] = useState<Partial<Record<StaffField, User[]>>>({});
+  const [staffByRole, setStaffByRole] = useState<
+    Partial<Record<StaffField, User[]>>
+  >({});
   const [assignment, setAssignment] = useState<Record<StaffField, string>>({
     cuttingMaster: "",
     stitcher: "",
@@ -127,14 +131,18 @@ export default function NewOrderPage() {
         });
         setStaffByRole(map);
       })
-      .catch((err) => toast.error(errorMessage(err, "Failed to load staff list")));
+      .catch((err) =>
+        toast.error(errorMessage(err, "Failed to load staff list")),
+      );
   }, []);
 
   // Phone lookup state
   const [phone, setPhone] = useState("");
   const [looking, setLooking] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null); // found customer
-  const [customerStatus, setCustomerStatus] = useState<"found" | "new" | "">(""); // 'found' | 'new' | ''
+  const [customerStatus, setCustomerStatus] = useState<"found" | "new" | "">(
+    "",
+  ); // 'found' | 'new' | ''
   const [newCustomerName, setNewCustomerName] = useState("");
   const [measurements, setMeasurements] = useState<Measurement>({});
   const [showHistory, setShowHistory] = useState(false);
@@ -180,7 +188,11 @@ export default function NewOrderPage() {
   const setM = (k: keyof Measurement, v: number) =>
     setMeasurements((m) => ({ ...m, [k]: v }));
 
-  const setItem = <K extends keyof ItemForm>(idx: number, k: K, v: ItemForm[K]) =>
+  const setItem = <K extends keyof ItemForm>(
+    idx: number,
+    k: K,
+    v: ItemForm[K],
+  ) =>
     setItems((list) =>
       list.map((it, i) => (i === idx ? { ...it, [k]: v } : it)),
     );
@@ -295,7 +307,9 @@ export default function NewOrderPage() {
           }
           if (o.styleNotes) set("styleNotes", o.styleNotes);
           const custPhone =
-            typeof o.customer === "object" && o.customer && "phone" in o.customer
+            typeof o.customer === "object" &&
+            o.customer &&
+            "phone" in o.customer
               ? String(o.customer.phone || "")
               : "";
           if (!qPhone && custPhone) {
@@ -340,7 +354,11 @@ export default function NewOrderPage() {
     // but this form calls preventDefault() and never checks native HTML5
     // validity, so those attributes are visual only — the real gate is here
     // (and again on the server, which is the true source of truth).
-    if (items.some((it) => Number(it.basePrice) < 0 || Number(it.fabricAmount) < 0)) {
+    if (
+      items.some(
+        (it) => Number(it.basePrice) < 0 || Number(it.fabricAmount) < 0,
+      )
+    ) {
       toast.error("Prices cannot be negative");
       return;
     }
@@ -360,15 +378,20 @@ export default function NewOrderPage() {
     }
     setLoading(true);
     try {
+      console.log(1);
       let customerId = customer?._id;
 
       // Create new customer if needed
       if (customerStatus === "new") {
+        console.log(2);
+
         if (!newCustomerName.trim()) {
           toast.error("Enter customer name");
           setLoading(false);
           return;
         }
+        console.log(3);
+
         const { data } = await api.post("/customers", {
           name: newCustomerName.trim(),
           phone: normalizePkMobile(phone) || phone.trim(),
@@ -382,6 +405,7 @@ export default function NewOrderPage() {
         // Existing customer whose suit no was actually changed (confirmed
         // via the edit button) — sync it back, which backs up the old value.
         console.log("Syncing suit no change to customer record");
+        console.log(4);
         await api.put(`/customers/${customerId}/suit-no`, {
           suitNo: form.suitNo.trim(),
         });
@@ -446,11 +470,15 @@ export default function NewOrderPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">New Order</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+        New Order
+      </h1>
 
       {/* ── Step 1: Phone lookup ── */}
       <div className="card space-y-4">
-        <h2 className="font-semibold text-gray-700 dark:text-gray-300">Step 1 — Customer</h2>
+        <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+          Step 1 — Customer
+        </h2>
         <div className="flex gap-2 flex-wrap">
           <input
             className="input flex-1 min-w-[160px]"
@@ -479,10 +507,13 @@ export default function NewOrderPage() {
                 <p className="font-semibold text-green-800 dark:text-green-300">
                   ✅ {customer.name}
                 </p>
-                <p className="text-sm text-green-600 dark:text-green-400">{customer.phone}</p>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  {customer.phone}
+                </p>
                 {customer.suitNo && (
                   <p className="text-sm text-green-600 dark:text-green-400">
-                    Suit No: <span className="font-semibold">{customer.suitNo}</span>
+                    Suit No:{" "}
+                    <span className="font-semibold">{customer.suitNo}</span>
                   </p>
                 )}
               </div>
@@ -541,7 +572,9 @@ export default function NewOrderPage() {
                           {h.takenAt
                             ? new Date(h.takenAt).toLocaleDateString()
                             : "Unknown date"}
-                          {typeof h.takenBy === "object" && h.takenBy?.name && ` — by ${h.takenBy.name}`}
+                          {typeof h.takenBy === "object" &&
+                            h.takenBy?.name &&
+                            ` — by ${h.takenBy.name}`}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {MEASUREMENT_FIELDS.map(([k, l]) =>
@@ -659,7 +692,9 @@ export default function NewOrderPage() {
           {/* ── Item lines — multiple items per order ── */}
           <hr className="border-gray-100 dark:border-gray-800" />
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-700 dark:text-gray-300">Items</h3>
+            <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+              Items
+            </h3>
             <button
               type="button"
               onClick={addItem}
@@ -725,7 +760,8 @@ export default function NewOrderPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      Price per Unit (PKR){branchSettings.requireOrderPrice && " *"}
+                      Price per Unit (PKR)
+                      {branchSettings.requireOrderPrice && " *"}
                     </label>
                     <input
                       required={branchSettings.requireOrderPrice}
@@ -758,7 +794,11 @@ export default function NewOrderPage() {
                       className="input text-sm"
                       value={it.fabricSource}
                       onChange={(e) =>
-                        setItem(idx, "fabricSource", e.target.value as FabricSource)
+                        setItem(
+                          idx,
+                          "fabricSource",
+                          e.target.value as FabricSource,
+                        )
                       }
                     >
                       <option value="customer_provided">
@@ -807,7 +847,9 @@ export default function NewOrderPage() {
           </div>
 
           <hr className="border-gray-100 dark:border-gray-800" />
-          <h3 className="font-semibold text-gray-700 dark:text-gray-300">Billing</h3>
+          <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+            Billing
+          </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -824,7 +866,8 @@ export default function NewOrderPage() {
                 placeholder="0"
               />
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                Cannot exceed the order total (PKR {estimatedTotal.toLocaleString()}).
+                Cannot exceed the order total (PKR{" "}
+                {estimatedTotal.toLocaleString()}).
               </p>
             </div>
             <div className="flex items-end gap-4">
