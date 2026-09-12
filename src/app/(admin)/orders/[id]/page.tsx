@@ -6,11 +6,30 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
+import clsx from "clsx";
 import type { AxiosError } from "axios";
 import { errorMessage } from "@/lib/errorMessage";
 import { isValidObjectId } from "@/lib/validate";
 import { hasFeature } from "@/lib/features";
 import { waLink } from "@/lib/whatsapp";
+import { statusLabel, statusBadgeClass } from "@/lib/orderStatus";
+import {
+  ScissorsIcon,
+  Squares2X2Icon,
+  FireIcon,
+  ArchiveBoxIcon,
+  ArrowPathRoundedSquareIcon,
+  PencilSquareIcon,
+  PrinterIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  CheckCircleIcon,
+  ArrowUturnLeftIcon,
+  DocumentTextIcon,
+  BoltIcon,
+  ChatBubbleLeftRightIcon,
+  ScaleIcon,
+} from "@heroicons/react/24/outline";
 import type {
   Order,
   OrderStatus,
@@ -36,50 +55,32 @@ const STATUS_FLOW: OrderStatus[] = [
   "delivered",
 ];
 
-const STATUS_COLORS: Partial<Record<OrderStatus, string>> = {
-  draft: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-  received: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  cutting:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-  cutting_review:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  stitching:
-    "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  stitching_review:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  pressing:
-    "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
-  pressing_review:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  quality_check:
-    "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300",
-  ready: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  delivered: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  rework: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  cancelled: "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
-};
-
-const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
-  cutting_review: "Awaiting Checker (Cutting)",
-  stitching_review: "Awaiting Checker (Stitching)",
-  pressing_review: "Awaiting Checker (Pressing)",
-};
-
 type StaffField = "cuttingMaster" | "stitcher" | "presser";
 
 const STAFF_ROLES: [StaffField, string, string][] = [
-  ["cuttingMaster", "cutting_master", "✂️ Cutting Master"],
-  ["stitcher", "stitcher", "🧵 Stitcher"],
-  ["presser", "presser", "🔥 Press Man"],
+  ["cuttingMaster", "cutting_master", "Cutting Master"],
+  ["stitcher", "stitcher", "Stitcher"],
+  ["presser", "presser", "Press Man"],
 ];
+
+// Icon for each staff-assignment field — shared by the draft-activation
+// form, the Edit Order form, the Staff Assignment card, and Assignment
+// History. Covers cuttingMaster/stitcher/presser (STAFF_ROLES above) plus
+// stockManager, which isn't part of the draft-activation trio.
+const STAFF_FIELD_ICONS: Record<string, typeof ScissorsIcon> = {
+  cuttingMaster: ScissorsIcon,
+  stitcher: Squares2X2Icon,
+  presser: FireIcon,
+  stockManager: ArchiveBoxIcon,
+};
 
 // Assignment History card — field/source labels for the audit trail of
 // every staff (re)assignment on this order (backend: assignmentHistory).
 const ASSIGNMENT_FIELD_LABELS: Record<string, string> = {
-  cuttingMaster: "✂️ Cutting Master",
-  stitcher: "🧵 Stitcher",
-  presser: "🔥 Press Man",
-  stockManager: "📦 Stock Manager",
+  cuttingMaster: "Cutting Master",
+  stitcher: "Stitcher",
+  presser: "Press Man",
+  stockManager: "Stock Manager",
 };
 const ASSIGNMENT_SOURCE_LABELS: Record<string, string> = {
   create: "set at order creation",
@@ -476,12 +477,12 @@ export default function OrderDetailPage() {
   if (loading)
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
       </div>
     );
   if (!order)
     return (
-      <div className="text-center text-gray-400 dark:text-gray-500 py-20">
+      <div className="text-center text-faint py-20">
         Order not found or not assigned to you
       </div>
     );
@@ -529,28 +530,24 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 font-mono break-all">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-ink font-mono break-all">
             {order.orderNumber}
           </h1>
           <div className="flex gap-2 mt-1 flex-wrap">
-            <span
-              className={`badge ${STATUS_COLORS[order.status] || "bg-gray-100 dark:bg-gray-800"}`}
-            >
-              {STATUS_LABELS[order.status] || order.status?.replace(/_/g, " ")}
+            <span className={statusBadgeClass(order.status)}>
+              {statusLabel(order.status)}
             </span>
-            {order.isRush && (
-              <span className="badge bg-red-500 dark:bg-red-600 text-white">
-                RUSH
-              </span>
-            )}
+            {order.isRush && <span className="badge-danger">RUSH</span>}
             {order.isPickedUp && (
-              <span className="badge bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
-                Picked Up ✓
+              <span className="badge-success">
+                <CheckCircleIcon className="h-3 w-3" aria-hidden="true" />
+                Picked Up
               </span>
             )}
             {order.rackNumber && (
-              <span className="badge bg-blue-600 dark:bg-blue-700 text-white text-base font-bold px-3 py-1">
-                📦 Rack {order.rackNumber}
+              <span className="badge-accent">
+                <ArchiveBoxIcon className="h-3 w-3" aria-hidden="true" />
+                Rack {order.rackNumber}
               </span>
             )}
           </div>
@@ -566,7 +563,8 @@ export default function OrderDetailPage() {
                 className="btn-secondary text-sm"
                 title="Start a new order for this customer with the same items"
               >
-                🔁 Repeat
+                <ArrowPathRoundedSquareIcon className="h-4 w-4" aria-hidden="true" />
+                Repeat
               </Link>
             )}
           {order.status != "ready" &&
@@ -574,7 +572,8 @@ export default function OrderDetailPage() {
             hasFeature(user, "orderEdit") &&
             !editing && (
               <button onClick={startEdit} className="btn-secondary text-sm">
-                ✏️ Edit
+                <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
+                Edit
               </button>
             )}
           {isAdmin && hasFeature(user, "receiptPrinting") && (
@@ -582,7 +581,8 @@ export default function OrderDetailPage() {
               href={`/orders/${order._id}/receipt`}
               className="btn-secondary text-sm"
             >
-              🖨 Receipt
+              <PrinterIcon className="h-4 w-4" aria-hidden="true" />
+              Receipt
             </Link>
           )}
           <button
@@ -591,7 +591,8 @@ export default function OrderDetailPage() {
             className="btn-secondary text-sm"
             title="Refresh order"
           >
-            {refreshing ? "⏳ Refreshing…" : "🔄 Refresh"}
+            <ArrowPathIcon className={clsx("h-4 w-4", refreshing && "animate-spin")} aria-hidden="true" />
+            {refreshing ? "Refreshing…" : "Refresh"}
           </button>
           {nextStatus === "ready" ? (
             <div className="flex items-center gap-2">
@@ -622,7 +623,7 @@ export default function OrderDetailPage() {
         </div>
       </div>
       {nextStatus === "ready" && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 -mt-4">
+        <p className="text-xs text-faint -mt-4">
           A rack number is required to mark this order as Ready.
         </p>
       )}
@@ -637,10 +638,10 @@ export default function OrderDetailPage() {
                 className="flex flex-col items-center gap-1 shrink-0"
               >
                 <div
-                  className={`h-2 w-10 rounded-full transition-colors ${i <= currentIdx ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"}`}
+                  className={`h-2 w-10 rounded-full transition-colors ${i <= currentIdx ? "bg-accent" : "bg-border"}`}
                 />
                 <span
-                  className="hidden lg:block text-gray-400 dark:text-gray-500 text-center capitalize"
+                  className="hidden lg:block text-faint text-center capitalize"
                   style={{ fontSize: "10px" }}
                 >
                   {s.replace(/_/g, " ")}
@@ -656,10 +657,11 @@ export default function OrderDetailPage() {
           Assign shortcut below is feature-gated (draftAutoAssign,
           super_admin toggle, Settings → Features). ── */}
       {isAdmin && order.status === "draft" && (
-        <div className="card space-y-4 border-2 border-dashed border-primary/30">
+        <div className="card space-y-4 border-2 border-dashed border-accent/30">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-              📝 Assign Staff to Activate
+            <h2 className="font-semibold text-ink flex items-center gap-1.5">
+              <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
+              Assign Staff to Activate
             </h2>
             {hasFeature(user, "draftAutoAssign") && (
               <button
@@ -668,11 +670,18 @@ export default function OrderDetailPage() {
                 disabled={autoAssigning}
                 className="btn-secondary text-xs"
               >
-                {autoAssigning ? "Assigning…" : "⚡ Auto Assign"}
+                {autoAssigning ? (
+                  "Assigning…"
+                ) : (
+                  <>
+                    <BoltIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                    Auto Assign
+                  </>
+                )}
               </button>
             )}
           </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
+          <p className="text-xs text-faint -mt-2">
             This order is a draft and won&apos;t show up for staff until all
             three roles — Cutting Master, Stitcher and Press Man — are
             assigned.
@@ -683,28 +692,32 @@ export default function OrderDetailPage() {
             onSubmit={saveAssignment}
             className="grid grid-cols-1 sm:grid-cols-3 gap-4"
           >
-            {STAFF_ROLES.map(([field, , label]) => (
-              <div key={field}>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {label}
-                </label>
-                <select
-                  className="input"
-                  value={assignment[field]}
-                  onChange={(e) =>
-                    setAssignment((a) => ({ ...a, [field]: e.target.value }))
-                  }
-                >
-                  <option value="">Unassigned</option>
-                  {(staffByRole[field] || []).map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name}
-                      {!s.hasLogin ? " (no login)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
+            {STAFF_ROLES.map(([field, , label]) => {
+              const Icon = STAFF_FIELD_ICONS[field];
+              return (
+                <div key={field}>
+                  <label className="flex items-center gap-1 text-sm font-semibold text-ink mb-1">
+                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                    {label}
+                  </label>
+                  <select
+                    className="input"
+                    value={assignment[field]}
+                    onChange={(e) =>
+                      setAssignment((a) => ({ ...a, [field]: e.target.value }))
+                    }
+                  >
+                    <option value="">Unassigned</option>
+                    {(staffByRole[field] || []).map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.name}
+                        {!s.hasLogin ? " (no login)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
             <div className="sm:col-span-3">
               <button
                 type="submit"
@@ -721,7 +734,7 @@ export default function OrderDetailPage() {
               {(!assignment.cuttingMaster ||
                 !assignment.stitcher ||
                 !assignment.presser) && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                <p className="text-xs text-faint mt-1">
                   Select all three roles to activate.
                 </p>
               )}
@@ -732,28 +745,28 @@ export default function OrderDetailPage() {
 
       {/* ── Checker sent this back with a remark — visible to everyone once set ── */}
       {order.checkerRemark && !isReviewStage && (
-        <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg p-4 text-sm">
-          <p className="font-semibold text-red-800 dark:text-red-300 mb-1">
-            🔁 Sent back by Checker for rework
+        <div className="card border-l-4 border-l-danger bg-danger-soft text-sm">
+          <p className="font-semibold text-danger mb-1 flex items-center gap-1.5">
+            <ArrowPathRoundedSquareIcon className="h-4 w-4" aria-hidden="true" />
+            Sent back by Checker for rework
           </p>
-          <p className="text-red-700 dark:text-red-400 italic">
-            {order.checkerRemark}
-          </p>
+          <p className="text-danger italic">{order.checkerRemark}</p>
         </div>
       )}
 
       {/* ── Checker: approve or reject a stage submitted for review ── */}
       {(isChecker || isAdmin) && isReviewStage && (
-        <div className="card space-y-3 border-2 border-dashed border-amber-300 dark:border-amber-700">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-            🔍 Review Required
+        <div className="card space-y-3 border-2 border-dashed border-warning/40">
+          <h2 className="font-semibold text-ink flex items-center gap-1.5">
+            <MagnifyingGlassIcon className="h-4 w-4" aria-hidden="true" />
+            Review Required
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {STATUS_LABELS[order.status]} — inspect the work for this stage,
+          <p className="text-sm text-muted">
+            {statusLabel(order.status)} — inspect the work for this stage,
             then approve to pass it on or reject to send it back for rework.
           </p>
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-semibold text-ink mb-1">
               Remark (optional)
             </label>
             <textarea
@@ -771,15 +784,17 @@ export default function OrderDetailPage() {
               onClick={() => submitReview("approve")}
               className="btn-primary text-sm"
             >
-              ✅ Approve — Pass to Next Stage
+              <CheckCircleIcon className="h-4 w-4" aria-hidden="true" />
+              Approve — Pass to Next Stage
             </button>
             <button
               type="button"
               disabled={reviewing}
               onClick={() => submitReview("reject")}
-              className="btn-secondary text-sm text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/40"
+              className="btn-secondary text-sm text-danger border-danger/30 hover:bg-danger-soft"
             >
-              ↩️ Reject — Send Back
+              <ArrowUturnLeftIcon className="h-4 w-4" aria-hidden="true" />
+              Reject — Send Back
             </button>
           </div>
         </div>
@@ -788,12 +803,13 @@ export default function OrderDetailPage() {
       {/* ── Edit order (orderEdit feature) ── */}
       {editing && editForm && (
         <div className="card space-y-4">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-            ✏️ Edit Order
+          <h2 className="font-semibold text-ink flex items-center gap-1.5">
+            <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
+            Edit Order
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <label className="block text-xs font-semibold text-ink mb-1">
                 Suit No
               </label>
               <input
@@ -805,7 +821,7 @@ export default function OrderDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <label className="block text-xs font-semibold text-ink mb-1">
                 Promised Date
               </label>
               <input
@@ -820,7 +836,7 @@ export default function OrderDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <label className="block text-xs font-semibold text-ink mb-1">
                 Rush Surcharge
               </label>
               <input
@@ -836,7 +852,7 @@ export default function OrderDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <label className="block text-xs font-semibold text-ink mb-1">
                 Discount
               </label>
               <input
@@ -856,15 +872,15 @@ export default function OrderDetailPage() {
             {(order.items || []).map((it, i) => (
               <div
                 key={i}
-                className="grid grid-cols-4 gap-2 items-end border border-gray-200 dark:border-gray-700 rounded-lg p-2"
+                className="grid grid-cols-4 gap-2 items-end border border-border rounded-lg p-2"
               >
-                <p className="text-sm text-gray-700 dark:text-gray-300 col-span-4 sm:col-span-1 font-medium">
+                <p className="text-sm text-ink col-span-4 sm:col-span-1 font-medium">
                   {it.garmentType}
                 </p>
                 {(["quantity", "basePrice", "fabricAmount"] as const).map(
                   (field) => (
                     <div key={field}>
-                      <label className="block text-[10px] uppercase text-gray-400 dark:text-gray-500 mb-0.5">
+                      <label className="block text-[10px] uppercase text-faint mb-0.5">
                         {field === "quantity"
                           ? "Qty"
                           : field === "basePrice"
@@ -897,7 +913,7 @@ export default function OrderDetailPage() {
             ))}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-semibold text-ink mb-1">
               Style Notes
             </label>
             <textarea
@@ -910,41 +926,44 @@ export default function OrderDetailPage() {
             />
           </div>
 
-          <hr className="border-gray-100 dark:border-gray-800" />
-          <h3 className="font-semibold text-gray-700 dark:text-gray-300">
-            Staff Assignment
-          </h3>
-          <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
+          <hr className="border-border" />
+          <h3 className="font-semibold text-ink">Staff Assignment</h3>
+          <p className="text-xs text-faint -mt-2">
             Reassign who&apos;s responsible for this order — e.g. if the
             assigned staff member is unavailable. Doesn&apos;t change the
             order&apos;s status.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {STAFF_ROLES.map(([field, , label]) => (
-              <div key={field}>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {label}
-                </label>
-                <select
-                  className="input"
-                  value={editForm[field]}
-                  onChange={(e) =>
-                    setEditForm((f) => f && { ...f, [field]: e.target.value })
-                  }
-                >
-                  <option value="">Unassigned</option>
-                  {(staffByRole[field] || []).map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name}
-                      {!s.hasLogin ? " (no login)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
+            {STAFF_ROLES.map(([field, , label]) => {
+              const Icon = STAFF_FIELD_ICONS[field];
+              return (
+                <div key={field}>
+                  <label className="flex items-center gap-1 text-sm font-semibold text-ink mb-1">
+                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                    {label}
+                  </label>
+                  <select
+                    className="input"
+                    value={editForm[field]}
+                    onChange={(e) =>
+                      setEditForm((f) => f && { ...f, [field]: e.target.value })
+                    }
+                  >
+                    <option value="">Unassigned</option>
+                    {(staffByRole[field] || []).map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.name}
+                        {!s.hasLogin ? " (no login)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                📦 Stock Manager
+              <label className="flex items-center gap-1 text-sm font-semibold text-ink mb-1">
+                <ArchiveBoxIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                Stock Manager
               </label>
               <select
                 className="input"
@@ -983,14 +1002,10 @@ export default function OrderDetailPage() {
       {/* ── Customer info — admin only ── */}
       {canSeeCustomerInfo && (
         <div className="card space-y-3">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-            Customer
-          </h2>
+          <h2 className="font-semibold text-ink">Customer</h2>
           <div>
-            <p className="font-medium text-gray-900 dark:text-gray-100">
-              {orderCustomer?.name}
-            </p>
-            <p className="text-sm text-gray-400 dark:text-gray-500">
+            <p className="font-medium text-ink">{orderCustomer?.name}</p>
+            <p className="text-sm text-faint">
               {orderCustomer && "phone" in orderCustomer
                 ? String(orderCustomer.phone ?? "")
                 : ""}
@@ -998,11 +1013,14 @@ export default function OrderDetailPage() {
             {orderCustomer &&
               "address" in orderCustomer &&
               (orderCustomer as { address?: string }).address && (
-                <p className="text-sm text-gray-400 dark:text-gray-500">
+                <p className="text-sm text-faint">
                   {(orderCustomer as { address?: string }).address}
                 </p>
               )}
-            {/* One-click "order ready" WhatsApp message (whatsappNotify feature) */}
+            {/* One-click "order ready" WhatsApp message (whatsappNotify feature).
+                Kept as WhatsApp's own brand green rather than a theme token —
+                it's a recognizable affordance for "this opens WhatsApp", not a
+                semantic status color. */}
             {hasFeature(user, "whatsappNotify") &&
               order.status === "ready" &&
               orderCustomer &&
@@ -1020,7 +1038,8 @@ export default function OrderDetailPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium"
                 >
-                  💬 WhatsApp: Order Ready
+                  <ChatBubbleLeftRightIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                  WhatsApp: Order Ready
                 </a>
               )}
           </div>
@@ -1029,22 +1048,20 @@ export default function OrderDetailPage() {
 
       {/* ── Order details — everyone sees this ── */}
       <div className="card space-y-3">
-        <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-          Order Details
-        </h2>
+        <h2 className="font-semibold text-ink">Order Details</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
           <p>
-            <span className="text-gray-400 dark:text-gray-500">Suit No:</span>{" "}
+            <span className="text-faint">Suit No:</span>{" "}
             {order.suitNo || "—"}
           </p>
           <p>
-            <span className="text-gray-400 dark:text-gray-500">Promised:</span>{" "}
+            <span className="text-faint">Promised:</span>{" "}
             <span
               className={
                 order.promisedDate &&
                 new Date(order.promisedDate) < new Date() &&
                 order.status !== "delivered"
-                  ? "text-red-600 dark:text-red-400 font-semibold"
+                  ? "text-danger font-semibold"
                   : "font-medium"
               }
             >
@@ -1055,39 +1072,31 @@ export default function OrderDetailPage() {
           </p>
         </div>
         {order.styleNotes && (
-          <div className="bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-100 dark:border-yellow-900 rounded-lg p-3 text-sm text-gray-700 dark:text-gray-300 italic">
-            📝 {order.styleNotes}
+          <div className="bg-warning-soft rounded-lg p-3 text-sm text-muted italic flex items-start gap-1.5">
+            <DocumentTextIcon className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+            {order.styleNotes}
           </div>
         )}
       </div>
 
       {/* ── Items — one order can have multiple item lines ── */}
       <div className="card space-y-3">
-        <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-          Items
-        </h2>
+        <h2 className="font-semibold text-ink">Items</h2>
         <div className="space-y-2">
           {(order.items || []).map((it, i) => (
-            <div
-              key={i}
-              className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm"
-            >
+            <div key={i} className="bg-surface-hover rounded-lg p-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-800 dark:text-gray-200">
-                  {it.garmentType}
-                </span>
-                <span className="text-gray-500 dark:text-gray-400">
-                  Qty: {it.quantity || 1}
-                </span>
+                <span className="font-medium text-ink">{it.garmentType}</span>
+                <span className="text-muted">Qty: {it.quantity || 1}</span>
               </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              <div className="text-xs text-faint mt-1">
                 Fabric: {it.fabric || "—"} · Source:{" "}
                 {it.fabricSource?.replace(/_/g, " ") || "—"}
                 {it.fabricAmount > 0 &&
                   ` · Fabric Amount: PKR ${it.fabricAmount.toLocaleString()}`}
               </div>
               {canSeePricing && (
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <div className="text-xs text-muted mt-1">
                   PKR {it.basePrice?.toLocaleString()} × {it.quantity || 1} ={" "}
                   <span className="font-medium">
                     PKR{" "}
@@ -1105,8 +1114,9 @@ export default function OrderDetailPage() {
       {/* ── Measurements — shown to cutting master, stitcher, presser, admin ── */}
       {canSeeMeasurements && (
         <div className="card space-y-3">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-            📏 Customer Measurements (inches)
+          <h2 className="font-semibold text-ink flex items-center gap-1.5">
+            <ScaleIcon className="h-4 w-4" aria-hidden="true" />
+            Customer Measurements (inches)
           </h2>
           {hasMeasurements && measurements ? (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
@@ -1114,12 +1124,10 @@ export default function OrderDetailPage() {
                 measurements[k] ? (
                   <div
                     key={k}
-                    className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center"
+                    className="bg-surface-hover rounded-lg p-2 text-center"
                   >
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                      {label}
-                    </p>
-                    <p className="font-bold text-gray-800 dark:text-gray-200">
+                    <p className="text-xs text-faint">{label}</p>
+                    <p className="font-bold text-ink">
                       {String(measurements[k])}"
                     </p>
                   </div>
@@ -1127,13 +1135,14 @@ export default function OrderDetailPage() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 dark:text-gray-500 italic">
+            <p className="text-sm text-faint italic">
               No measurements recorded for this customer.
             </p>
           )}
           {measurements?.notes && (
-            <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded p-2">
-              📝 {measurements.notes}
+            <p className="text-sm text-muted bg-surface-hover rounded p-2 flex items-start gap-1.5">
+              <DocumentTextIcon className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+              {measurements.notes}
             </p>
           )}
         </div>
@@ -1142,14 +1151,10 @@ export default function OrderDetailPage() {
       {/* ── Billing — admin only ── */}
       {canSeePricing && (
         <div className="card space-y-3">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-            Billing
-          </h2>
+          <h2 className="font-semibold text-ink">Billing</h2>
           <div className="text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-gray-400 dark:text-gray-500">
-                Items Subtotal
-              </span>
+              <span className="text-faint">Items Subtotal</span>
               <span>
                 PKR{" "}
                 {(
@@ -1165,31 +1170,27 @@ export default function OrderDetailPage() {
             </div>
             {!!order.rushSurcharge && order.rushSurcharge > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-gray-500">
-                  Rush Surcharge
-                </span>
-                <span className="text-red-500 dark:text-red-400">
+                <span className="text-faint">Rush Surcharge</span>
+                <span className="text-danger">
                   +PKR {order.rushSurcharge?.toLocaleString()}
                 </span>
               </div>
             )}
             {!!order.discountAmount && order.discountAmount > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-gray-500">
-                  Discount
-                </span>
-                <span className="text-green-600 dark:text-green-400">
+                <span className="text-faint">Discount</span>
+                <span className="text-success">
                   -PKR {order.discountAmount?.toLocaleString()}
                 </span>
               </div>
             )}
-            <div className="flex justify-between font-bold border-t border-gray-100 dark:border-gray-800 pt-1">
+            <div className="flex justify-between font-bold border-t border-border pt-1">
               <span>Total</span>
               <span>PKR {order.totalPrice?.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400 dark:text-gray-500">Paid</span>
-              <span className="text-green-600 dark:text-green-400">
+              <span className="text-faint">Paid</span>
+              <span className="text-success">
                 PKR {order.amountPaid?.toLocaleString()}
               </span>
             </div>
@@ -1197,9 +1198,7 @@ export default function OrderDetailPage() {
               <span>Balance Due</span>
               <span
                 className={
-                  order.balanceDue > 0
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-green-600 dark:text-green-400"
+                  order.balanceDue > 0 ? "text-danger" : "text-success"
                 }
               >
                 PKR {order.balanceDue?.toLocaleString()}
@@ -1207,12 +1206,9 @@ export default function OrderDetailPage() {
             </div>
           </div>
           {order.payments?.length > 0 && (
-            <div className="text-xs space-y-1 bg-gray-50 dark:bg-gray-800 rounded p-2">
+            <div className="text-xs space-y-1 bg-surface-hover rounded p-2">
               {order.payments.map((p, i) => (
-                <div
-                  key={i}
-                  className="flex justify-between text-gray-500 dark:text-gray-400"
-                >
+                <div key={i} className="flex justify-between text-muted">
                   <span>{p.method?.replace(/_/g, " ")}</span>
                   <span>PKR {p.amount?.toLocaleString()}</span>
                 </div>
@@ -1264,50 +1260,45 @@ export default function OrderDetailPage() {
       {/* ── Staff Assignment — admin only ── */}
       {canSeeStaffAssignment && (
         <div className="card">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            Staff Assignment
-          </h2>
+          <h2 className="font-semibold text-ink mb-3">Staff Assignment</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
             {(
               [
-                ["✂️ Cutting Master", order.cuttingMaster],
-                ["🧵 Stitcher", order.stitcher],
-                ["🔥 Press Man", order.presser],
-                ["📦 Stock Manager", order.stockManager],
-              ] as [string, Order["cuttingMaster"]][]
-            ).map(([r, s]) => (
-              <div
-                key={r}
-                className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
-              >
-                <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
-                  {r}
-                </p>
-                <p className="font-medium">
-                  {(typeof s === "object" && s?.name) || (
-                    <span className="text-gray-300 dark:text-gray-600 text-xs">
-                      Unassigned
-                    </span>
-                  )}
-                </p>
-              </div>
-            ))}
+                ["cuttingMaster", "Cutting Master", order.cuttingMaster],
+                ["stitcher", "Stitcher", order.stitcher],
+                ["presser", "Press Man", order.presser],
+                ["stockManager", "Stock Manager", order.stockManager],
+              ] as [string, string, Order["cuttingMaster"]][]
+            ).map(([field, r, s]) => {
+              const Icon = STAFF_FIELD_ICONS[field];
+              return (
+                <div key={field} className="bg-surface-hover rounded-lg p-3">
+                  <p className="text-xs text-faint mb-1 flex items-center gap-1">
+                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                    {r}
+                  </p>
+                  <p className="font-medium">
+                    {(typeof s === "object" && s?.name) || (
+                      <span className="text-faint text-xs">Unassigned</span>
+                    )}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* ── Status History — everyone sees ── */}
       <div className="card">
-        <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
-          Status History
-        </h2>
+        <h2 className="font-semibold text-ink mb-3">Status History</h2>
         <div className="space-y-2">
           {order.statusHistory?.map((h, i) => (
             <div
               key={i}
               className="flex flex-wrap gap-x-3 gap-y-1 text-sm items-start"
             >
-              <span className="text-gray-400 dark:text-gray-500 text-xs w-28 sm:w-32 shrink-0 mt-0.5">
+              <span className="text-faint text-xs w-28 sm:w-32 shrink-0 mt-0.5">
                 {h.changedAt
                   ? format(new Date(h.changedAt), "dd MMM HH:mm")
                   : ""}
@@ -1317,14 +1308,12 @@ export default function OrderDetailPage() {
               </span>
               {/* Only show who changed it to admin */}
               {isAdmin && (
-                <span className="text-gray-400 dark:text-gray-500 text-xs">
+                <span className="text-faint text-xs">
                   {(typeof h.changedBy === "object" && h.changedBy?.name) || ""}
                 </span>
               )}
               {h.note && (
-                <span className="text-gray-400 dark:text-gray-500 italic text-xs">
-                  {h.note}
-                </span>
+                <span className="text-faint italic text-xs">{h.note}</span>
               )}
             </div>
           ))}
@@ -1334,9 +1323,7 @@ export default function OrderDetailPage() {
       {/* ── Assignment History — same audience as the Staff Assignment card ── */}
       {canSeeStaffAssignment && !!order.assignmentHistory?.length && (
         <div className="card">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            Assignment History
-          </h2>
+          <h2 className="font-semibold text-ink mb-3">Assignment History</h2>
           <div className="space-y-2">
             {[...order.assignmentHistory]
               .reverse()
@@ -1345,24 +1332,28 @@ export default function OrderDetailPage() {
                   (typeof ref === "object" && ref?.name) || null;
                 const from = nameOf(h.fromStaff);
                 const to = nameOf(h.toStaff);
+                const FieldIcon = STAFF_FIELD_ICONS[h.field];
                 return (
                   <div
                     key={i}
                     className="flex flex-wrap gap-x-3 gap-y-1 text-sm items-start"
                   >
-                    <span className="text-gray-400 dark:text-gray-500 text-xs w-28 sm:w-32 shrink-0 mt-0.5">
+                    <span className="text-faint text-xs w-28 sm:w-32 shrink-0 mt-0.5">
                       {h.changedAt
                         ? format(new Date(h.changedAt), "dd MMM HH:mm")
                         : ""}
                     </span>
-                    <span className="font-medium">
+                    <span className="font-medium flex items-center gap-1">
+                      {FieldIcon && (
+                        <FieldIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                      )}
                       {ASSIGNMENT_FIELD_LABELS[h.field] || h.field}
                     </span>
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-muted">
                       {from ? `${from} → ` : ""}
                       {to || "Unassigned"}
                     </span>
-                    <span className="text-gray-400 dark:text-gray-500 text-xs">
+                    <span className="text-faint text-xs">
                       {ASSIGNMENT_SOURCE_LABELS[h.source] || h.source}
                       {(typeof h.changedBy === "object" && h.changedBy?.name &&
                         ` by ${h.changedBy.name}`) ||

@@ -1,10 +1,21 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ComponentType, type SVGProps } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
 import { useAuth } from "@/context/AuthContext";
+import {
+  PrinterIcon,
+  ScissorsIcon,
+  CalendarDaysIcon,
+  ClipboardDocumentListIcon,
+  BanknotesIcon,
+  CheckCircleIcon,
+  ArrowDownTrayIcon,
+} from "@heroicons/react/24/outline";
 import type { Branch } from "@/types/user";
+
+type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Daily closing summary (feature flag `dailySummary`) — what the admin
 // reconciles the cash drawer against at the end of the day. The Print
@@ -61,10 +72,28 @@ export default function DailySummaryPage() {
     0,
   );
 
+  const summaryTiles: { label: string; value: string; icon: Icon; tone?: "success" }[] = data
+    ? [
+        { label: "New Orders", value: String(data.newOrders.count), icon: ClipboardDocumentListIcon },
+        {
+          label: "Orders Value",
+          value: `PKR ${(data.newOrders.value || 0).toLocaleString()}`,
+          icon: BanknotesIcon,
+        },
+        { label: "Delivered", value: String(data.delivered), icon: CheckCircleIcon, tone: "success" },
+        {
+          label: "Cash Collected",
+          value: `PKR ${data.collectedTotal.toLocaleString()}`,
+          icon: ArrowDownTrayIcon,
+          tone: "success",
+        },
+      ]
+    : [];
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-ink">
           Daily Summary
         </h1>
         <div className="flex flex-wrap items-center gap-2">
@@ -89,31 +118,31 @@ export default function DailySummaryPage() {
             </select>
           )}
           <button onClick={() => window.print()} className="btn-primary text-sm">
-            🖨 Print
+            <PrinterIcon className="h-4 w-4" aria-hidden="true" />
+            Print
           </button>
         </div>
       </div>
 
       {loading || !data ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="hidden print:block text-lg font-bold">
-            ✂️ Daily Summary — {new Date(`${date}T00:00:00`).toLocaleDateString()}
+          <p className="hidden print:flex items-center gap-1.5 text-lg font-bold">
+            <ScissorsIcon className="h-4 w-4" aria-hidden="true" />
+            Daily Summary — {new Date(`${date}T00:00:00`).toLocaleDateString()}
           </p>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              ["New Orders", String(data.newOrders.count)],
-              ["Orders Value", `PKR ${(data.newOrders.value || 0).toLocaleString()}`],
-              ["Delivered", String(data.delivered)],
-              ["Cash Collected", `PKR ${data.collectedTotal.toLocaleString()}`],
-            ].map(([label, value]) => (
-              <div key={label} className="card">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+            {summaryTiles.map(({ label, value, icon: TileIcon, tone }) => (
+              <div key={label} className="stat-card">
+                <div className="stat-card-label flex items-center gap-1.5">
+                  <TileIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {label}
+                </div>
+                <p className={`stat-card-value ${tone === "success" ? "text-success" : ""}`}>
                   {value}
                 </p>
               </div>
@@ -121,37 +150,34 @@ export default function DailySummaryPage() {
           </div>
 
           <div className="card p-0 overflow-hidden">
-            <h2 className="font-semibold text-gray-700 dark:text-gray-300 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+            <h2 className="font-semibold text-ink px-4 py-3 border-b border-border">
               Payments Collected
             </h2>
             {data.payments.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500">
+              <p className="px-4 py-6 text-sm text-faint">
                 No payments recorded this day.
               </p>
             ) : (
-              <table className="w-full text-sm">
+              <table className="table">
                 <tbody>
                   {data.payments.map((p) => (
-                    <tr
-                      key={p._id}
-                      className="border-t border-gray-100 dark:border-gray-800 first:border-t-0"
-                    >
-                      <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">
+                    <tr key={p._id}>
+                      <td className="text-muted">
                         {METHOD_LABELS[p._id] || p._id}
-                        <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
+                        <span className="text-xs text-faint ml-2">
                           {p.count} payment{p.count === 1 ? "" : "s"}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-gray-900 dark:text-gray-100">
+                      <td className="text-right font-semibold text-ink">
                         PKR {p.amount.toLocaleString()}
                       </td>
                     </tr>
                   ))}
-                  <tr className="border-t-2 border-gray-200 dark:border-gray-700">
-                    <td className="px-4 py-2.5 font-bold text-gray-900 dark:text-gray-100">
+                  <tr className="border-t-2 border-border">
+                    <td className="font-bold text-ink">
                       Total
                     </td>
-                    <td className="px-4 py-2.5 text-right font-bold text-gray-900 dark:text-gray-100">
+                    <td className="text-right font-bold text-ink">
                       PKR {data.collectedTotal.toLocaleString()}
                     </td>
                   </tr>
@@ -161,8 +187,9 @@ export default function DailySummaryPage() {
           </div>
 
           {appointmentsBooked > 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              📅 {appointmentsBooked} appointment
+            <p className="flex items-center gap-1.5 text-sm text-muted">
+              <CalendarDaysIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {appointmentsBooked} appointment
               {appointmentsBooked === 1 ? "" : "s"} for this day (
               {(data.appointments || [])
                 .map((a) => `${a.count} ${a._id}`)

@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useDialog } from "@/context/DialogContext";
 import toast from "react-hot-toast";
+import { UserPlusIcon, PencilSquareIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
 import { errorMessage } from "@/lib/errorMessage";
 import type { User, UserRole, Branch } from "@/types/user";
@@ -184,24 +185,23 @@ export default function StaffPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Staff</h1>
+        <h1 className="text-xl sm:text-2xl font-extrabold text-ink">Staff</h1>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="btn-primary text-sm"
         >
-          + Add Staff
+          <UserPlusIcon className="h-4 w-4" aria-hidden="true" />
+          Add Staff
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleCreate} className="card space-y-4">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">New Staff Member</h2>
+          <h2 className="font-semibold text-ink">New Staff Member</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name *
-              </label>
+              <label className="block text-sm font-semibold text-ink mb-1">Name *</label>
               <input
                 required
                 className="input"
@@ -210,9 +210,7 @@ export default function StaffPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Phone Number *
-              </label>
+              <label className="block text-sm font-semibold text-ink mb-1">Phone Number *</label>
               <input
                 required
                 type="tel"
@@ -222,9 +220,7 @@ export default function StaffPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Role *
-              </label>
+              <label className="block text-sm font-semibold text-ink mb-1">Role *</label>
               <select
                 required
                 className="input"
@@ -240,9 +236,7 @@ export default function StaffPage() {
             </div>
             {user?.role === "super_admin" && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Branch *
-                </label>
+                <label className="block text-sm font-semibold text-ink mb-1">Branch *</label>
                 <select
                   required
                   className="input"
@@ -259,7 +253,7 @@ export default function StaffPage() {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Commission/piece (PKR)
               </label>
               <input
@@ -274,9 +268,9 @@ export default function StaffPage() {
           </div>
 
           {/* Login access toggle — not needed for shop-floor roles, this is just a data record */}
-          <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+          <div className="border-t border-border pt-4">
             {requiresLogin ? (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              <p className="text-xs text-muted mb-2">
                 This role needs to sign in to the admin panel, so email &amp;
                 password are required.
               </p>
@@ -286,9 +280,9 @@ export default function StaffPage() {
                   type="checkbox"
                   checked={wantsLogin}
                   onChange={(e) => setWantsLogin(e.target.checked)}
-                  className="w-4 h-4 text-primary"
+                  className="w-4 h-4 text-accent"
                 />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-semibold text-ink">
                   Give this staff member login access
                 </span>
               </label>
@@ -297,7 +291,7 @@ export default function StaffPage() {
             {showLoginFields && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-semibold text-ink mb-1">
                     Email {requiresLogin && "*"}
                   </label>
                   <input
@@ -311,7 +305,7 @@ export default function StaffPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-semibold text-ink mb-1">
                     Password {requiresLogin && "*"}
                   </label>
                   <input
@@ -349,12 +343,10 @@ export default function StaffPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
         </div>
       ) : staff.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400 dark:text-gray-500">
-          No staff found
-        </div>
+        <div className="card text-center py-12 text-faint">No staff found</div>
       ) : (
         <>
           {/* Mobile: stacked cards */}
@@ -365,25 +357,21 @@ export default function StaffPage() {
                 className={`card space-y-2 ${!m.isActive ? "opacity-50" : ""}`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                  <span className="font-semibold text-ink">
                     {m.name}
                     {m._id === user?._id && (
-                      <span className="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500">
-                        (you)
-                      </span>
+                      <span className="ml-1 text-xs font-normal text-faint">(you)</span>
                     )}
                   </span>
-                  <span
-                    className={`badge ${m.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}
-                  >
+                  <span className={m.isActive ? "badge-success" : "badge-neutral"}>
                     {m.isActive ? "Active" : "Inactive"}
                   </span>
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-muted">
                   {ROLE_LABELS[m.role] || m.role?.replace(/_/g, " ")} ·{" "}
                   {(typeof m.branch === "object" && m.branch?.name) || "—"}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 flex-wrap">
+                <div className="text-xs text-muted flex items-center gap-1 flex-wrap">
                   <span>{m.phone || "—"} ·</span>
                   {rateEdit?.id === m._id ? (
                     <>
@@ -398,14 +386,11 @@ export default function StaffPage() {
                         }
                         onKeyDown={(e) => e.key === "Enter" && saveRate()}
                       />
-                      <button onClick={saveRate} className="text-primary font-medium">
+                      <button onClick={saveRate} className="text-accent font-semibold">
                         Save
                       </button>
-                      <button
-                        onClick={() => setRateEdit(null)}
-                        className="text-gray-400 dark:text-gray-500"
-                      >
-                        ✕
+                      <button onClick={() => setRateEdit(null)} className="text-faint">
+                        <XMarkIcon className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     </>
                   ) : (
@@ -417,24 +402,21 @@ export default function StaffPage() {
                         })
                       }
                       title="Edit commission rate"
-                      className="hover:text-primary"
+                      className="inline-flex items-center gap-1 hover:text-accent"
                     >
-                      PKR {m.commissionPerPiece || 0}/piece ✏️
+                      PKR {m.commissionPerPiece || 0}/piece
+                      <PencilSquareIcon className="h-3 w-3" aria-hidden="true" />
                     </button>
                   )}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {m.hasLogin ? (
-                    <span>{m.email}</span>
-                  ) : (
-                    <span className="text-gray-300 dark:text-gray-600">No login</span>
-                  )}
+                <div className="text-xs text-muted">
+                  {m.hasLogin ? <span>{m.email}</span> : <span className="text-faint">No login</span>}
                 </div>
                 <div className="flex gap-4">
                   {canToggleActive(m) && (
                     <button
                       onClick={() => toggleActive(m._id, m.isActive)}
-                      className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                      className="text-xs text-muted hover:text-danger"
                     >
                       {m.isActive ? "Deactivate" : "Activate"}
                     </button>
@@ -442,7 +424,7 @@ export default function StaffPage() {
                   {canDelete(m) && (
                     <button
                       onClick={() => deleteStaff(m)}
-                      className="text-xs text-red-500 dark:text-red-400 hover:underline"
+                      className="text-xs text-danger hover:underline"
                     >
                       Delete
                     </button>
@@ -453,10 +435,10 @@ export default function StaffPage() {
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+          <div className="hidden md:block table-wrap">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
+              <table className="table">
+                <thead>
                   <tr>
                     {[
                       "Name",
@@ -468,39 +450,29 @@ export default function StaffPage() {
                       "Status",
                       "Actions",
                     ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
-                      >
+                      <th key={h} className="whitespace-nowrap">
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                <tbody>
                   {staff.map((m) => (
-                    <tr
-                      key={m._id}
-                      className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!m.isActive ? "opacity-50" : ""}`}
-                    >
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                    <tr key={m._id} className={!m.isActive ? "opacity-50" : ""}>
+                      <td className="font-semibold text-ink">
                         {m.name}
                         {m._id === user?._id && (
-                          <span className="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500">
-                            (you)
-                          </span>
+                          <span className="ml-1 text-xs font-normal text-faint">(you)</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                      <td className="text-muted">
                         {ROLE_LABELS[m.role] || m.role?.replace(/_/g, " ")}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      <td className="text-muted">
                         {(typeof m.branch === "object" && m.branch?.name) || "—"}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                        {m.phone || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                      <td className="text-muted">{m.phone || "—"}</td>
+                      <td className="text-muted whitespace-nowrap">
                         {rateEdit?.id === m._id ? (
                           <span className="flex items-center gap-1">
                             <input
@@ -516,15 +488,15 @@ export default function StaffPage() {
                             />
                             <button
                               onClick={saveRate}
-                              className="text-xs text-primary font-medium hover:underline"
+                              className="text-xs text-accent font-semibold hover:underline"
                             >
                               Save
                             </button>
                             <button
                               onClick={() => setRateEdit(null)}
-                              className="text-xs text-gray-400 dark:text-gray-500"
+                              className="text-xs text-faint"
                             >
-                              ✕
+                              <XMarkIcon className="h-3.5 w-3.5" aria-hidden="true" />
                             </button>
                           </span>
                         ) : (
@@ -536,33 +508,30 @@ export default function StaffPage() {
                               })
                             }
                             title="Edit commission rate"
-                            className="hover:text-primary"
+                            className="inline-flex items-center gap-1 hover:text-accent"
                           >
-                            PKR {m.commissionPerPiece || 0} ✏️
+                            PKR {m.commissionPerPiece || 0}
+                            <PencilSquareIcon className="h-3.5 w-3.5" aria-hidden="true" />
                           </button>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      <td className="text-muted">
                         {m.hasLogin ? (
-                          <span className="text-gray-600 dark:text-gray-400">{m.email}</span>
+                          <span className="text-muted">{m.email}</span>
                         ) : (
-                          <span className="text-gray-300 dark:text-gray-600 text-xs">
-                            No login
-                          </span>
+                          <span className="text-faint text-xs">No login</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`badge ${m.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}
-                        >
+                      <td>
+                        <span className={m.isActive ? "badge-success" : "badge-neutral"}>
                           {m.isActive ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="whitespace-nowrap">
                         {canToggleActive(m) && (
                           <button
                             onClick={() => toggleActive(m._id, m.isActive)}
-                            className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                            className="text-xs text-muted hover:text-danger"
                           >
                             {m.isActive ? "Deactivate" : "Activate"}
                           </button>
@@ -570,7 +539,7 @@ export default function StaffPage() {
                         {canDelete(m) && (
                           <button
                             onClick={() => deleteStaff(m)}
-                            className="ml-3 text-xs text-red-500 dark:text-red-400 hover:underline"
+                            className="ml-3 text-xs text-danger hover:underline"
                           >
                             Delete
                           </button>

@@ -107,17 +107,13 @@ export function DialogProvider({ children }: { children: ReactNode }) {
             aria-modal="true"
             aria-label={request.title || request.message}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-transparent dark:border-gray-800 p-6 w-full max-w-sm space-y-4"
+            className="bg-surface rounded-2xl shadow-xl border border-border p-6 w-full max-w-sm space-y-4"
           >
             {request.title && (
-              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                {request.title}
-              </h2>
+              <h2 className="text-base font-semibold text-ink">{request.title}</h2>
             )}
             {request.message && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">
-                {request.message}
-              </p>
+              <p className="text-sm text-muted whitespace-pre-line">{request.message}</p>
             )}
             {request.kind === "prompt" && (
               <input
@@ -144,7 +140,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
                 autoFocus={request.kind === "confirm"}
                 className={
                   request.kind === "confirm" && request.danger
-                    ? "bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                    ? "bg-danger hover:opacity-90 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-opacity"
                     : "btn-primary text-sm"
                 }
               >

@@ -42,12 +42,12 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="max-w-md space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <h1 className="text-xl sm:text-2xl font-extrabold text-ink">
         Change Password
       </h1>
       <form onSubmit={submit} className="card space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-semibold text-ink mb-1">
             Current Password
           </label>
           <input
@@ -61,7 +61,7 @@ export default function ChangePasswordPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-semibold text-ink mb-1">
             New Password
           </label>
           <input
@@ -74,12 +74,12 @@ export default function ChangePasswordPage() {
               setForm((f) => ({ ...f, newPassword: e.target.value }))
             }
           />
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-xs text-faint mt-1">
             At least 6 characters.
           </p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-semibold text-ink mb-1">
             Confirm New Password
           </label>
           <input

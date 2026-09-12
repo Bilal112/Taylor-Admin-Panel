@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { hasFeature } from "@/lib/features";
 import { isValidObjectId } from "@/lib/validate";
+import { PrinterIcon } from "@heroicons/react/24/outline";
 import type { Order, OrderItem } from "@/types/order";
 
 // Printable customer slip (receiptPrinting feature). Sized for an 80mm
@@ -41,20 +42,20 @@ export default function ReceiptPage() {
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
       </div>
     );
 
   if (!isAdmin || !hasFeature(user, "receiptPrinting"))
     return (
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+      <p className="text-sm text-muted">
         Receipt printing is not enabled for your branch.
       </p>
     );
 
   if (!order)
     return (
-      <p className="text-sm text-gray-500 dark:text-gray-400">Order not found.</p>
+      <p className="text-sm text-muted">Order not found.</p>
     );
 
   const customer = typeof order.customer === "object" ? order.customer : null;
@@ -69,7 +70,8 @@ export default function ReceiptPage() {
     <div className="space-y-4">
       <div className="no-print flex gap-3">
         <button onClick={() => window.print()} className="btn-primary text-sm">
-          🖨 Print
+          <PrinterIcon className="h-4 w-4" aria-hidden="true" />
+          Print
         </button>
         <button onClick={() => router.back()} className="btn-secondary text-sm">
           Back to Order

@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import type { Branch } from "@/types/user";
 import { FEATURES, FEATURE_KEYS, type FeatureKey } from "@/lib/features";
 import { to12h } from "@/lib/time";
+import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 
 type SettingKey = "requireOrderPrice" | "autoAssignOrders";
 
@@ -206,21 +207,17 @@ export default function SettingsPage() {
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
       </div>
     );
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-        Settings
-      </h1>
+      <h1 className="text-xl sm:text-2xl font-extrabold text-ink">Settings</h1>
 
       {isSuperAdmin && (
         <div className="card">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Branch
-          </label>
+          <label className="block text-sm font-semibold text-ink mb-1">Branch</label>
           <select
             className="input"
             value={branchId}
@@ -240,27 +237,27 @@ export default function SettingsPage() {
         <>
           {settingsAllowed ? (
             <div className="card space-y-4">
-              <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+              <h2 className="font-semibold text-ink">
                 Order Settings — {branch.name}
               </h2>
               {SETTINGS.map((s) => (
                 <label
                   key={s.key}
-                  className="flex items-start gap-3 cursor-pointer border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                  className="flex items-start gap-3 cursor-pointer border border-border rounded-lg p-3"
                 >
                   <input
                     type="checkbox"
-                    className="w-4 h-4 text-primary mt-0.5"
+                    className="w-4 h-4 text-accent mt-0.5"
                     checked={values[s.key]}
                     onChange={(e) =>
                       setValues((v) => v && { ...v, [s.key]: e.target.checked })
                     }
                   />
                   <span>
-                    <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">
+                    <span className="block text-sm font-semibold text-ink">
                       {s.label}
                     </span>
-                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <span className="block text-xs text-muted mt-0.5">
                       {s.description}
                     </span>
                   </span>
@@ -271,18 +268,19 @@ export default function SettingsPage() {
               </button>
             </div>
           ) : (
-            <div className="card text-sm text-gray-500 dark:text-gray-400">
-              ⚙️ Settings for this branch are managed by the super admin.
+            <div className="card flex items-center gap-2 text-sm text-muted">
+              <Cog6ToothIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Settings for this branch are managed by the super admin.
             </div>
           )}
 
           {settingsAllowed && priceListOn && (
             <div className="card space-y-4">
               <div>
-                <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+                <h2 className="font-semibold text-ink">
                   Default Price List
                 </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-muted mt-1">
                   Auto-fills the item price on the New Order form. Leave a field
                   blank for no default.
                 </p>
@@ -290,7 +288,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {GARMENT_TYPES.map((g) => (
                   <div key={g}>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-semibold text-muted mb-1">
                       {g}
                     </label>
                     <input
@@ -319,28 +317,28 @@ export default function SettingsPage() {
           {settingsAllowed && (branch.features?.appointments ?? true) && appt && (
             <div className="card space-y-4">
               <div>
-                <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+                <h2 className="font-semibold text-ink">
                   Appointments
                 </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-muted mt-1">
                   Online booking for this branch — shift hours, how many
                   customers per hour, and the &quot;we&apos;re full&quot; switch.
                 </p>
               </div>
-              <label className="flex items-start gap-3 cursor-pointer border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <label className="flex items-start gap-3 cursor-pointer border border-border rounded-lg p-3">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 text-primary mt-0.5"
+                  className="w-4 h-4 text-accent mt-0.5"
                   checked={appt.enabled}
                   onChange={(e) =>
                     setAppt((a) => a && { ...a, enabled: e.target.checked })
                   }
                 />
                 <span>
-                  <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">
+                  <span className="block text-sm font-semibold text-ink">
                     Accept online appointments
                   </span>
-                  <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <span className="block text-xs text-muted mt-0.5">
                     Turn off to stop new bookings — customers will see your
                     message instead.
                   </span>
@@ -348,7 +346,7 @@ export default function SettingsPage() {
               </label>
               {!appt.enabled && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  <label className="block text-xs font-semibold text-muted mb-1">
                     Message shown to customers
                   </label>
                   <input
@@ -364,7 +362,7 @@ export default function SettingsPage() {
               )}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  <label className="block text-xs font-semibold text-muted mb-1">
                     Opens
                   </label>
                   <select
@@ -384,7 +382,7 @@ export default function SettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  <label className="block text-xs font-semibold text-muted mb-1">
                     Closes
                   </label>
                   <select
@@ -404,7 +402,7 @@ export default function SettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  <label className="block text-xs font-semibold text-muted mb-1">
                     Per hour
                   </label>
                   <input
@@ -432,10 +430,10 @@ export default function SettingsPage() {
           {isSuperAdmin && features && (
             <div className="card space-y-4">
               <div>
-                <h2 className="font-semibold text-gray-700 dark:text-gray-300">
+                <h2 className="font-semibold text-ink">
                   Features — {branch.name}
                 </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-muted mt-1">
                   Which features this branch&apos;s admin and staff can use.
                   Changes apply for them on their next page load.
                 </p>
@@ -443,21 +441,21 @@ export default function SettingsPage() {
               {FEATURE_KEYS.map((k) => (
                 <label
                   key={k}
-                  className="flex items-start gap-3 cursor-pointer border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                  className="flex items-start gap-3 cursor-pointer border border-border rounded-lg p-3"
                 >
                   <input
                     type="checkbox"
-                    className="w-4 h-4 text-primary mt-0.5"
+                    className="w-4 h-4 text-accent mt-0.5"
                     checked={features[k]}
                     onChange={(e) =>
                       setFeatures((f) => f && { ...f, [k]: e.target.checked })
                     }
                   />
                   <span>
-                    <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">
+                    <span className="block text-sm font-semibold text-ink">
                       {FEATURES[k].label}
                     </span>
-                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <span className="block text-xs text-muted mt-0.5">
                       {FEATURES[k].description}
                     </span>
                   </span>
@@ -474,11 +472,7 @@ export default function SettingsPage() {
           )}
         </>
       ) : (
-        !isSuperAdmin && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            No branch found for your account.
-          </p>
-        )
+        !isSuperAdmin && <p className="text-sm text-muted">No branch found for your account.</p>
       )}
     </div>
   );

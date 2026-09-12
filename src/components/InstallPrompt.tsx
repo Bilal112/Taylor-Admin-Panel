@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ScissorsIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 // "Install the app" banner for the PWA — mobile AND desktop. Chrome/Edge
 // (Android and desktop alike) expose a real install flow via the
@@ -72,23 +73,17 @@ export default function InstallPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="no-print fixed bottom-3 inset-x-3 md:inset-x-auto md:right-4 md:bottom-4 md:max-w-sm z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-3 flex items-center gap-3">
-      <span className="text-2xl" aria-hidden="true">
-        ✂️
-      </span>
+    <div className="no-print fixed bottom-3 inset-x-3 md:inset-x-auto md:right-4 md:bottom-4 md:max-w-sm z-50 bg-surface border border-border rounded-2xl shadow-xl p-3 flex items-center gap-3">
+      <ScissorsIcon className="h-6 w-6 text-accent shrink-0" aria-hidden="true" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          Install Taylor App
-        </p>
+        <p className="text-sm font-semibold text-ink">Install Taylor App</p>
         {showIos ? (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-muted">
             Tap <span className="font-semibold">Share</span> →{" "}
             <span className="font-semibold">Add to Home Screen</span>
           </p>
         ) : (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Quick access from your home screen
-          </p>
+          <p className="text-xs text-muted">Quick access from your home screen</p>
         )}
       </div>
       {!showIos && installEvent && (
@@ -99,12 +94,8 @@ export default function InstallPrompt() {
           Install
         </button>
       )}
-      <button
-        onClick={dismiss}
-        aria-label="Dismiss"
-        className="text-gray-400 dark:text-gray-500 p-1 shrink-0"
-      >
-        ✕
+      <button onClick={dismiss} aria-label="Dismiss" className="text-faint p-1 shrink-0">
+        <XMarkIcon className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
   );

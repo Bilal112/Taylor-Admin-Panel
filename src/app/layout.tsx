@@ -1,11 +1,21 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Public_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { DialogProvider } from "@/context/DialogContext";
 import InstallPrompt from "@/components/InstallPrompt";
+
+// One typeface for the whole app, weight-differentiated (see globals.css /
+// tailwind.config.js) instead of mixing fonts for emphasis.
+const publicSans = Public_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-public-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Taylor App",
@@ -31,11 +41,11 @@ const THEME_INIT_SCRIPT = `
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={publicSans.variable}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+      <body className="font-sans bg-bg text-ink">
         <ThemeProvider>
           <AuthProvider>
             <DialogProvider>

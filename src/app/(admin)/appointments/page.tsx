@@ -7,6 +7,7 @@ import { waLink } from "@/lib/whatsapp";
 import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
 import { useAuth } from "@/context/AuthContext";
+import { ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline";
 import type { Branch } from "@/types/user";
 import { to12h } from "@/lib/time";
 
@@ -26,11 +27,10 @@ interface AppointmentRow {
   latestOrder: { orderNumber: string; suitNo?: string; status: string } | null;
 }
 
-const STATUS_BADGES: Record<AppointmentRow["status"], string> = {
-  booked: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  completed:
-    "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-  cancelled: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+const STATUS_BADGE: Record<AppointmentRow["status"], string> = {
+  booked: "badge-accent",
+  completed: "badge-success",
+  cancelled: "badge-neutral",
 };
 
 const day = (d: Date) => d.toLocaleDateString("en-CA");
@@ -84,7 +84,7 @@ export default function AppointmentsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-ink">
           Appointments
         </h1>
         <div className="flex gap-2">
@@ -105,7 +105,7 @@ export default function AppointmentsPage() {
 
       <div className="card flex flex-wrap items-end gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-xs font-semibold text-ink mb-1">
             Date
           </label>
           <input
@@ -117,7 +117,7 @@ export default function AppointmentsPage() {
         </div>
         {isSuperAdmin && (
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-semibold text-ink mb-1">
               Branch
             </label>
             <select
@@ -134,64 +134,62 @@ export default function AppointmentsPage() {
             </select>
           </div>
         )}
-        <p className="text-sm text-gray-500 dark:text-gray-400 pb-2">
+        <p className="text-sm text-muted pb-2">
           {booked} booked
         </p>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
         </div>
       ) : rows.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400 dark:text-gray-500">
+        <div className="card text-center py-12 text-faint">
           No appointments for this day
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
+        <div className="table-wrap">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="table">
               <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500">
-                  <th className="px-4 py-3">Time</th>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Phone</th>
-                  {isSuperAdmin && !branchId && <th className="px-4 py-3">Branch</th>}
-                  <th className="px-4 py-3">Customer</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Actions</th>
+                <tr>
+                  <th>Time</th>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  {isSuperAdmin && !branchId && <th>Branch</th>}
+                  <th>Customer</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
                   <tr
                     key={r._id}
-                    className={`border-t border-gray-100 dark:border-gray-800 ${
-                      r.status === "cancelled" ? "opacity-50" : ""
-                    }`}
+                    className={r.status === "cancelled" ? "opacity-50" : ""}
                   >
-                    <td className="px-4 py-3 font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                    <td className="font-semibold text-ink whitespace-nowrap">
                       {to12h(r.visitTime || r.time)}
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                    <td className="font-medium text-ink">
                       {r.name}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                    <td className="text-muted">
                       {r.phone}
                     </td>
                     {isSuperAdmin && !branchId && (
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      <td className="text-muted">
                         {(typeof r.branch === "object" && r.branch?.name) || "—"}
                       </td>
                     )}
-                    <td className="px-4 py-3">
+                    <td>
                       {r.customer ? (
                         <div>
-                          <span className="badge bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                          <span className="badge-success">
                             Existing: {r.customer.name}
                           </span>
                           {r.latestOrder && (
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            <p className="text-xs text-faint mt-1">
                               {r.latestOrder.suitNo
                                 ? `Suit No ${r.latestOrder.suitNo}`
                                 : r.latestOrder.orderNumber}{" "}
@@ -200,17 +198,17 @@ export default function AppointmentsPage() {
                           )}
                         </div>
                       ) : (
-                        <span className="badge bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                        <span className="badge-accent">
                           New customer
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`badge ${STATUS_BADGES[r.status]}`}>
+                    <td>
+                      <span className={STATUS_BADGE[r.status]}>
                         {r.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="whitespace-nowrap">
                       {r.status === "booked" && (
                         <>
                           {hasFeature(user, "appointmentLoop") && (
@@ -219,7 +217,7 @@ export default function AppointmentsPage() {
                                   with this phone already looked up. */}
                               <Link
                                 href={`/orders/new?phone=${encodeURIComponent(r.phone)}`}
-                                className="text-xs text-primary font-medium hover:underline"
+                                className="text-xs text-accent font-semibold hover:underline"
                               >
                                 Start Order
                               </Link>
@@ -232,15 +230,16 @@ export default function AppointmentsPage() {
                                 )}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="ml-3 text-xs text-green-600 dark:text-green-400 hover:underline"
+                                className="inline-flex items-center gap-1 ml-3 text-xs text-accent hover:underline"
                               >
-                                💬 Remind
+                                <ChatBubbleLeftRightIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                                Remind
                               </a>
                             </>
                           )}
                           <button
                             onClick={() => setStatus(r, "completed")}
-                            className={`text-xs text-green-600 dark:text-green-400 hover:underline ${
+                            className={`text-xs text-success hover:underline ${
                               hasFeature(user, "appointmentLoop") ? "ml-3" : ""
                             }`}
                           >
@@ -248,7 +247,7 @@ export default function AppointmentsPage() {
                           </button>
                           <button
                             onClick={() => setStatus(r, "cancelled")}
-                            className="ml-3 text-xs text-red-500 dark:text-red-400 hover:underline"
+                            className="ml-3 text-xs text-danger hover:underline"
                           >
                             Cancel
                           </button>
@@ -263,7 +262,7 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      <p className="text-xs text-gray-400 dark:text-gray-500">
+      <p className="text-xs text-faint">
         Booking hours, slots per hour, and the on/off switch are on the
         Settings page.
       </p>

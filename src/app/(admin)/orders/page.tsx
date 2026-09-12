@@ -9,40 +9,30 @@ import toast from "react-hot-toast";
 import clsx from "clsx";
 import { errorMessage } from "@/lib/errorMessage";
 import { hasFeature } from "@/lib/features";
+import { STATUS_BADGE_CLASS, statusLabel, statusBadgeClass } from "@/lib/orderStatus";
+import {
+  ClockIcon,
+  FireIcon,
+  CurrencyDollarIcon,
+  DocumentTextIcon,
+  ArrowPathIcon,
+  PlusIcon,
+  ArchiveBoxIcon,
+  CheckCircleIcon,
+  BanknotesIcon,
+} from "@heroicons/react/24/outline";
 import type { Order, OrderStatus } from "@/types/order";
 import type { Pagination } from "@/types/api";
 
 type Chip = "" | "today" | "overdue" | "unpaid" | "drafts";
 
-const CHIPS: { key: Chip; label: string }[] = [
-  { key: "", label: "All" },
-  { key: "today", label: "⏰ Due Today" },
-  { key: "overdue", label: "🔥 Overdue" },
-  { key: "unpaid", label: "💸 Unpaid" },
-  { key: "drafts", label: "📝 Drafts" },
+const CHIPS: { key: Chip; label: string; icon: typeof ClockIcon }[] = [
+  { key: "", label: "All", icon: DocumentTextIcon },
+  { key: "today", label: "Due Today", icon: ClockIcon },
+  { key: "overdue", label: "Overdue", icon: FireIcon },
+  { key: "unpaid", label: "Unpaid", icon: CurrencyDollarIcon },
+  { key: "drafts", label: "Drafts", icon: DocumentTextIcon },
 ];
-
-const STATUS_COLORS: Partial<Record<OrderStatus, string>> = {
-  draft: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-  received: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  cutting: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-  cutting_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  stitching: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  stitching_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  pressing: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
-  pressing_review: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  quality_check: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300",
-  ready: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  delivered: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  rework: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  cancelled: "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
-};
-
-const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
-  cutting_review: "Awaiting Checker (Cutting)",
-  stitching_review: "Awaiting Checker (Stitching)",
-  pressing_review: "Awaiting Checker (Pressing)",
-};
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -222,7 +212,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Orders</h1>
+        <h1 className="text-xl sm:text-2xl font-extrabold text-ink">Orders</h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => fetchOrders({ silent: true })}
@@ -230,11 +220,13 @@ export default function OrdersPage() {
             className="btn-secondary text-sm"
             title="Refresh orders"
           >
-            {refreshing ? "⏳ Refreshing…" : "🔄 Refresh"}
+            <ArrowPathIcon className={clsx("h-4 w-4", refreshing && "animate-spin")} aria-hidden="true" />
+            {refreshing ? "Refreshing…" : "Refresh"}
           </button>
           {isAdmin && (
             <Link href="/orders/new" className="btn-primary text-sm">
-              + New Order
+              <PlusIcon className="h-4 w-4" aria-hidden="true" />
+              New Order
             </Link>
           )}
         </div>
@@ -265,9 +257,9 @@ export default function OrdersPage() {
           }}
         >
           <option value="">All Statuses</option>
-          {(Object.keys(STATUS_COLORS) as OrderStatus[]).map((s) => (
+          {(Object.keys(STATUS_BADGE_CLASS) as OrderStatus[]).map((s) => (
             <option key={s} value={s}>
-              {STATUS_LABELS[s] || s.replace(/_/g, " ")}
+              {statusLabel(s)}
             </option>
           ))}
         </select>
@@ -276,7 +268,7 @@ export default function OrdersPage() {
       {/* Quick-filter chips (orderQuickActions feature) */}
       {quickActions && (
         <div className="flex gap-2 flex-wrap">
-          {CHIPS.map(({ key, label }) => (
+          {CHIPS.map(({ key, label, icon: ChipIcon }) => (
             <button
               key={key}
               onClick={() => {
@@ -284,12 +276,13 @@ export default function OrdersPage() {
                 setPage(1);
               }}
               className={clsx(
-                "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
                 chip === key
-                  ? "bg-primary text-white border-primary"
-                  : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary",
+                  ? "bg-accent text-white border-accent"
+                  : "border-border text-muted hover:border-accent hover:text-accent",
               )}
             >
+              <ChipIcon className="h-3.5 w-3.5" aria-hidden="true" />
               {label}
             </button>
           ))}
@@ -298,12 +291,10 @@ export default function OrdersPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
         </div>
       ) : orders.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400 dark:text-gray-500">
-          No orders found
-        </div>
+        <div className="card text-center py-12 text-faint">No orders found</div>
       ) : (
         <>
           {/* Mobile: stacked cards */}
@@ -317,38 +308,33 @@ export default function OrdersPage() {
                   href={`/orders/${order._id}`}
                   className={clsx(
                     "card block space-y-2",
-                    dueTomorrow && "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900",
+                    dueTomorrow && "bg-danger-soft border-danger/30",
                   )}
                 >
                   <div className="flex items-center justify-between flex-wrap gap-1">
-                    <span className="font-mono font-medium text-primary text-sm">
+                    <span className="font-mono font-semibold text-accent text-sm">
                       {order.orderNumber}
                     </span>
-                    <span
-                      className={`badge ${STATUS_COLORS[order.status] || "bg-gray-100 dark:bg-gray-800"}`}
-                    >
-                      {STATUS_LABELS[order.status] ||
-                        order.status?.replace(/_/g, " ")}
+                    <span className={statusBadgeClass(order.status)}>
+                      {statusLabel(order.status)}
                     </span>
                   </div>
                   <div className="flex gap-1 flex-wrap">
-                    {order.isRush && (
-                      <span className="badge bg-red-500 text-white text-xs">
-                        RUSH
-                      </span>
-                    )}
+                    {order.isRush && <span className="badge-danger text-xs">RUSH</span>}
                     {dueTomorrow && (
-                      <span className="badge bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-xs">
-                        ⏰ Due Tomorrow
+                      <span className="badge-danger text-xs">
+                        <ClockIcon className="h-3 w-3" aria-hidden="true" />
+                        Due Tomorrow
                       </span>
                     )}
                     {order.status === "ready" && order.rackNumber && (
-                      <span className="badge bg-blue-600 dark:bg-blue-700 text-white text-xs">
-                        📦 Rack {order.rackNumber}
+                      <span className="badge-accent text-xs">
+                        <ArchiveBoxIcon className="h-3 w-3" aria-hidden="true" />
+                        Rack {order.rackNumber}
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                  <div className="text-sm text-muted">
                     {(order.items || [])
                       .map(
                         (it) =>
@@ -357,23 +343,21 @@ export default function OrdersPage() {
                       .join(", ")}
                   </div>
                   {order.suitNo && (
-                    <div className="text-xs text-gray-400 dark:text-gray-500">
-                      Suit No: {order.suitNo}
-                    </div>
+                    <div className="text-xs text-faint">Suit No: {order.suitNo}</div>
                   )}
                   {canSeeCustomer && customer?.name && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-muted">
                       {customer.name} · {"phone" in customer ? customer.phone : ""}
                     </div>
                   )}
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-50 dark:border-gray-800">
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-border">
                     <span
                       className={
                         order.promisedDate &&
                         new Date(order.promisedDate) < new Date() &&
                         order.status !== "delivered"
-                          ? "text-red-600 dark:text-red-400 font-medium"
-                          : "text-gray-500 dark:text-gray-400"
+                          ? "text-danger font-semibold"
+                          : "text-muted"
                       }
                     >
                       {order.promisedDate
@@ -384,8 +368,8 @@ export default function OrdersPage() {
                       <span
                         className={
                           order.balanceDue > 0
-                            ? "text-red-600 dark:text-red-400 font-medium"
-                            : "text-green-600 dark:text-green-400 font-medium"
+                            ? "text-danger font-semibold"
+                            : "text-success font-semibold"
                         }
                       >
                         PKR {order.balanceDue?.toLocaleString()}
@@ -398,35 +382,29 @@ export default function OrdersPage() {
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+          <div className="hidden md:block table-wrap">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
+              <table className="table">
+                <thead>
                   <tr>
                     {columns.map((col) => (
-                      <th
-                        key={col.key}
-                        className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
-                      >
+                      <th key={col.key} className="whitespace-nowrap">
                         {col.label}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                <tbody>
                   {orders.map((order) => {
                     const dueTomorrow = isDueTomorrowNotReady(order);
                     const customer = typeof order.customer === "object" ? order.customer : null;
                     return (
                       <tr
                         key={order._id}
-                        className={clsx(
-                          "hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
-                          dueTomorrow && "bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40",
-                        )}
+                        className={clsx(dueTomorrow && "bg-danger-soft")}
                       >
                         {/* Order # — always shown, truncated to keep the column narrow */}
-                        <td className="px-4 py-3 font-mono font-medium text-primary max-w-[110px]">
+                        <td className="font-mono font-semibold text-accent max-w-[110px]">
                           <div className="flex items-center gap-1 flex-wrap">
                             <span
                               className="truncate inline-block max-w-[90px] align-bottom"
@@ -435,18 +413,17 @@ export default function OrdersPage() {
                               {order.orderNumber}
                             </span>
                             {order.isRush && (
-                              <span className="badge bg-red-500 dark:bg-red-600 text-white text-xs shrink-0">
-                                RUSH
-                              </span>
+                              <span className="badge-danger text-xs shrink-0">RUSH</span>
                             )}
                             {dueTomorrow && (
-                              <span className="badge bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-xs shrink-0">
-                                ⏰
+                              <span className="badge-danger text-xs shrink-0" title="Due tomorrow">
+                                <ClockIcon className="h-3 w-3" aria-hidden="true" />
                               </span>
                             )}
                             {order.status === "ready" && order.rackNumber && (
-                              <span className="badge bg-blue-600 dark:bg-blue-700 text-white text-xs shrink-0">
-                                📦 {order.rackNumber}
+                              <span className="badge-accent text-xs shrink-0">
+                                <ArchiveBoxIcon className="h-3 w-3" aria-hidden="true" />
+                                {order.rackNumber}
                               </span>
                             )}
                           </div>
@@ -454,18 +431,16 @@ export default function OrdersPage() {
 
                         {/* Customer — admin only */}
                         {canSeeCustomer && (
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-gray-900 dark:text-gray-100">
-                              {customer?.name}
-                            </div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                          <td>
+                            <div className="font-semibold text-ink">{customer?.name}</div>
+                            <div className="text-xs text-faint">
                               {customer && "phone" in customer ? customer.phone : ""}
                             </div>
                           </td>
                         )}
 
                         {/* Items — always shown */}
-                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <td className="text-muted">
                           <div>
                             {(order.items || [])
                               .map(
@@ -475,31 +450,26 @@ export default function OrdersPage() {
                               .join(", ")}
                           </div>
                           {order.suitNo && (
-                            <div className="text-xs text-gray-400 dark:text-gray-500">
-                              Suit No: {order.suitNo}
-                            </div>
+                            <div className="text-xs text-faint">Suit No: {order.suitNo}</div>
                           )}
                         </td>
 
                         {/* Status — always shown */}
-                        <td className="px-4 py-3">
-                          <span
-                            className={`badge ${STATUS_COLORS[order.status] || "bg-gray-100 dark:bg-gray-800"}`}
-                          >
-                            {STATUS_LABELS[order.status] ||
-                              order.status?.replace(/_/g, " ")}
+                        <td>
+                          <span className={statusBadgeClass(order.status)}>
+                            {statusLabel(order.status)}
                           </span>
                         </td>
 
                         {/* Promised date — always shown */}
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="whitespace-nowrap">
                           <span
                             className={
                               order.promisedDate &&
                               new Date(order.promisedDate) < new Date() &&
                               order.status !== "delivered"
-                                ? "text-red-600 dark:text-red-400 font-medium"
-                                : "text-gray-700 dark:text-gray-300"
+                                ? "text-danger font-semibold"
+                                : "text-muted"
                             }
                           >
                             {order.promisedDate
@@ -513,35 +483,31 @@ export default function OrdersPage() {
 
                         {/* Balance — admin only */}
                         {canSeeBalance && (
-                          <td className="px-4 py-3 font-medium whitespace-nowrap">
-                            <span
-                              className={
-                                order.balanceDue > 0
-                                  ? "text-red-600 dark:text-red-400"
-                                  : "text-green-600 dark:text-green-400"
-                              }
-                            >
+                          <td className="font-semibold whitespace-nowrap">
+                            <span className={order.balanceDue > 0 ? "text-danger" : "text-success"}>
                               PKR {order.balanceDue?.toLocaleString()}
                             </span>
                           </td>
                         )}
 
                         {/* Actions */}
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="whitespace-nowrap">
                           {quickActions && order.status === "quality_check" && (
                             <button
                               onClick={() => markReady(order)}
-                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline mr-3"
+                              className="inline-flex items-center gap-1 text-xs text-accent hover:underline mr-3"
                             >
-                              📦 Rack
+                              <ArchiveBoxIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                              Rack
                             </button>
                           )}
                           {quickActions && order.status === "ready" && (
                             <button
                               onClick={() => deliverOrder(order)}
-                              className="text-xs text-green-600 dark:text-green-400 hover:underline mr-3"
+                              className="inline-flex items-center gap-1 text-xs text-success hover:underline mr-3"
                             >
-                              ✓ Deliver
+                              <CheckCircleIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                              Deliver
                             </button>
                           )}
                           {quickActions &&
@@ -549,14 +515,15 @@ export default function OrdersPage() {
                             order.status !== "cancelled" && (
                               <button
                                 onClick={() => collectPayment(order)}
-                                className="text-xs text-amber-600 dark:text-amber-400 hover:underline mr-3"
+                                className="inline-flex items-center gap-1 text-xs text-warning hover:underline mr-3"
                               >
-                                💵 Pay
+                                <BanknotesIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                                Pay
                               </button>
                             )}
                           <Link
                             href={`/orders/${order._id}`}
-                            className="text-primary hover:underline text-xs font-medium"
+                            className="text-accent hover:underline text-xs font-semibold"
                           >
                             View
                           </Link>
@@ -569,8 +536,8 @@ export default function OrdersPage() {
             </div>
 
             {!!pagination.pages && pagination.pages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-surface-hover">
+                <span className="text-sm text-muted">
                   Page {pagination.page} of {pagination.pages} (
                   {pagination.total} total)
                 </span>
@@ -597,7 +564,7 @@ export default function OrdersPage() {
           {/* Mobile pagination */}
           {!!pagination.pages && pagination.pages > 1 && (
             <div className="md:hidden flex items-center justify-between px-1">
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="text-xs text-muted">
                 Page {pagination.page} of {pagination.pages} ({pagination.total}{" "}
                 total)
               </span>

@@ -4,6 +4,8 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
 import { to12h } from "@/lib/time";
+import { statusBadgeClass } from "@/lib/orderStatus";
+import { ScissorsIcon, CalendarDaysIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 
 // PUBLIC page — no login. Customers check their order status with just the
 // phone number they gave the shop. Backed by GET /api/public/orders, which
@@ -21,6 +23,10 @@ interface PublicOrder {
   createdAt?: string;
 }
 
+// Customer-facing wording — deliberately simpler than the internal
+// statusLabel() used on staff pages (e.g. "In Progress — Cutting" instead of
+// "Awaiting Checker (Cutting)"); coloring still comes from the shared
+// statusBadgeClass() so a status always means the same color everywhere.
 const STATUS_LABELS: Record<string, string> = {
   draft: "Received",
   received: "Received",
@@ -31,16 +37,10 @@ const STATUS_LABELS: Record<string, string> = {
   pressing: "In Progress — Pressing",
   pressing_review: "In Progress — Pressing",
   quality_check: "Final Check",
-  ready: "Ready for Pickup 🎉",
-  delivered: "Delivered ✓",
+  ready: "Ready for Pickup",
+  delivered: "Delivered",
   rework: "In Progress",
   cancelled: "Cancelled",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  ready: "bg-green-100 text-green-700",
-  delivered: "bg-gray-200 text-gray-600",
-  cancelled: "bg-red-100 text-red-600",
 };
 
 interface PublicAppointment {
@@ -91,27 +91,30 @@ export default function TrackPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light to-white dark:from-gray-900 dark:to-gray-950 px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-br from-accent-soft to-bg px-4 py-10">
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-primary">
-            <Link href="/">✂️ Taylor App</Link>
+          <h1 className="text-3xl font-extrabold text-ink">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <ScissorsIcon className="h-7 w-7 text-accent" aria-hidden="true" />
+              Taylor App
+            </Link>
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-muted mt-1">
             Track your order
           </p>
         </div>
 
         <form
           onSubmit={search}
-          className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 space-y-3 border border-transparent dark:border-gray-800"
+          className="bg-surface rounded-2xl shadow-xl p-6 space-y-3 border border-border"
         >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="block text-sm font-semibold text-ink">
             Your phone number
           </label>
           <div className="flex gap-2">
             <input
-              className={`input flex-1 ${phone.trim() && !normalizePkMobile(phone) ? "border-red-400 focus:ring-red-400" : ""}`}
+              className={`input flex-1 ${phone.trim() && !normalizePkMobile(phone) ? "border-danger focus:ring-danger" : ""}`}
               placeholder="03XX XXXXXXX"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -128,27 +131,30 @@ export default function TrackPage() {
             </button>
           </div>
           {phone.trim() !== "" && !normalizePkMobile(phone) && (
-            <p className="text-xs text-red-500">{PHONE_ERROR}</p>
+            <p className="text-xs text-danger">{PHONE_ERROR}</p>
           )}
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-faint">
             Use the same number you gave at the shop.
           </p>
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
         </form>
 
         {appointments.map((a, i) => (
           <div
             key={i}
-            className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-2xl p-4 text-sm text-blue-800 dark:text-blue-300"
+            className="flex items-start gap-2 bg-accent-soft border border-accent/30 rounded-2xl p-4 text-sm text-accent"
           >
-            📅 Your appointment: <b>{a.branch}</b> —{" "}
-            {new Date(`${a.date}T00:00:00`).toLocaleDateString()} at{" "}
-            <b>{to12h(a.visitTime || a.time)}</b>
+            <CalendarDaysIcon className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+            <span>
+              Your appointment: <b>{a.branch}</b> —{" "}
+              {new Date(`${a.date}T00:00:00`).toLocaleDateString()} at{" "}
+              <b>{to12h(a.visitTime || a.time)}</b>
+            </span>
           </div>
         ))}
 
         {orders && orders.length === 0 && (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow p-6 text-center text-sm text-gray-500 dark:text-gray-400 border border-transparent dark:border-gray-800">
+          <div className="bg-surface rounded-2xl shadow p-6 text-center text-sm text-muted border border-border">
             No orders found for this number. Please check the number or contact
             the shop.
           </div>
@@ -158,25 +164,23 @@ export default function TrackPage() {
           orders.map((o) => (
             <div
               key={o.orderNumber}
-              className="bg-white dark:bg-gray-900 rounded-2xl shadow p-5 space-y-2 border border-transparent dark:border-gray-800"
+              className="bg-surface rounded-2xl shadow p-5 space-y-2 border border-border"
             >
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <p className="font-mono font-semibold text-gray-900 dark:text-gray-100 break-all">
+                <p className="font-mono font-semibold text-ink break-all">
                   {o.suitNo ? `Suit No ${o.suitNo}` : o.orderNumber}
                 </p>
-                <span
-                  className={`badge ${STATUS_COLORS[o.status] || "bg-blue-100 text-blue-700"}`}
-                >
+                <span className={statusBadgeClass(o.status)}>
                   {STATUS_LABELS[o.status] || o.status.replace(/_/g, " ")}
                 </span>
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 space-y-0.5">
+              <div className="text-sm text-muted space-y-0.5">
                 {o.suitNo && <p className="font-mono text-xs">{o.orderNumber}</p>}
                 {o.branch && <p>Branch: {o.branch}</p>}
                 {o.promisedDate && (
                   <p>
                     Ready by:{" "}
-                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                    <span className="font-medium text-ink">
                       {new Date(o.promisedDate).toLocaleDateString()}
                     </span>
                   </p>
@@ -184,19 +188,25 @@ export default function TrackPage() {
                 {(o.balanceDue ?? 0) > 0 && !o.isPickedUp && (
                   <p>
                     Balance due:{" "}
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    <span className="font-semibold text-ink">
                       PKR {(o.balanceDue ?? 0).toLocaleString()}
                     </span>
                   </p>
                 )}
-                {o.isPickedUp && <p>Picked up ✓</p>}
+                {o.isPickedUp && (
+                  <p className="flex items-center gap-1">
+                    <CheckCircleIcon className="h-3.5 w-3.5 text-success" aria-hidden="true" />
+                    Picked up
+                  </p>
+                )}
               </div>
             </div>
           ))}
 
-        <p className="text-center text-xs text-gray-400 dark:text-gray-500">
-          <Link href="/book" className="text-primary hover:underline">
-            📅 Book an appointment
+        <p className="text-center text-xs text-faint">
+          <Link href="/book" className="inline-flex items-center gap-1 text-accent hover:underline">
+            <CalendarDaysIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            Book an appointment
           </Link>
           {" · "}
           <Link href="/login" className="hover:underline">

@@ -2,25 +2,159 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design tokens ──────────────────────────────────────────────────────
+ * One token set, computed twice (light + dark) — every color in the app
+ * should trace back to one of these, never a raw gray-N/blue-N literal, so
+ * the Light/Dark/System toggle (ThemeContext, which just flips the `.dark`
+ * class on <html>) repaints the whole app for free. Values are "R G B"
+ * triples (no commas) so Tailwind can apply opacity via
+ * `rgb(var(--x) / <alpha-value>)` — see tailwind.config.js.
+ */
+:root {
+  color-scheme: light;
+
+  --color-bg: 248 249 251; /* page background — soft, not pure white */
+  --color-surface: 255 255 255; /* card / panel background */
+  --color-surface-hover: 243 244 247; /* row hover, segmented-control track */
+  --color-border: 229 231 236;
+
+  --color-ink: 23 27 33; /* primary text — near-black, not pure #000 */
+  --color-muted: 100 107 119; /* secondary text */
+  --color-faint: 148 155 166; /* tertiary text — captions, table headers */
+
+  --color-accent: 30 91 219;
+  --color-accent-strong: 23 63 151; /* hover/active shade */
+  --color-accent-soft: 227 235 253; /* tint for badges, active nav row */
+
+  --color-success: 21 128 61;
+  --color-success-soft: 220 245 230;
+  --color-warning: 180 95 6;
+  --color-warning-soft: 253 240 214;
+  --color-danger: 190 33 42;
+  --color-danger-soft: 252 226 226;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --color-bg: 13 15 18; /* near-black, not pure #000 */
+  --color-surface: 20 23 28;
+  --color-surface-hover: 27 31 38;
+  --color-border: 40 44 52;
+
+  --color-ink: 236 238 241; /* near-white, not pure #fff */
+  --color-muted: 158 165 176;
+  --color-faint: 110 117 129;
+
+  --color-accent: 74 137 255;
+  --color-accent-strong: 104 158 255; /* lighten on hover, not darken, in dark mode */
+  --color-accent-soft: 30 45 74;
+
+  --color-success: 52 199 116;
+  --color-success-soft: 20 47 33;
+  --color-warning: 240 165 60;
+  --color-warning-soft: 56 41 16;
+  --color-danger: 240 90 90;
+  --color-danger-soft: 56 24 24;
+}
+
 @layer base {
-  body { @apply antialiased; }
+  body {
+    @apply antialiased bg-bg text-ink;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-extrabold tracking-tight;
+  }
 }
 
 @layer components {
+  /* ── Buttons ── */
   .btn-primary {
-    @apply bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-dark transition-colors disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 bg-accent text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-accent-dark transition-colors disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-secondary {
-    @apply bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
+    @apply inline-flex items-center justify-center gap-2 bg-surface border border-border text-ink px-4 py-2 rounded-lg font-semibold text-sm hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:pointer-events-none;
   }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 text-muted px-3 py-1.5 rounded-lg font-semibold text-sm hover:bg-surface-hover hover:text-ink transition-colors disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* ── Form controls — one rule covers input/select/textarea ── */
   .input {
-    @apply w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500;
+    @apply w-full bg-surface border border-border text-ink rounded-lg px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent placeholder:text-faint disabled:opacity-50 disabled:cursor-not-allowed;
   }
+
+  /* ── Card ── */
   .card {
-    @apply bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6;
+    @apply bg-surface rounded-xl border border-border p-6;
   }
+
+  /* ── Stat card — card + a small accent bar down the left edge ── */
+  .stat-card {
+    @apply relative overflow-hidden bg-surface rounded-xl border border-border p-6 pl-7;
+  }
+  .stat-card::before {
+    content: "";
+    @apply absolute left-0 top-0 h-full w-1 bg-accent;
+  }
+  .stat-card-label {
+    @apply text-xs font-semibold uppercase tracking-wide text-faint;
+  }
+  .stat-card-value {
+    @apply mt-1.5 text-2xl font-extrabold text-ink;
+  }
+
+  /* ── Pill badges — semantic color used only for status meaning ── */
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap;
+  }
+  .badge-neutral {
+    @apply badge bg-surface-hover text-muted;
+  }
+  .badge-accent {
+    @apply badge bg-accent-soft text-accent;
+  }
+  .badge-success {
+    @apply badge bg-success-soft text-success;
+  }
+  .badge-warning {
+    @apply badge bg-warning-soft text-warning;
+  }
+  .badge-danger {
+    @apply badge bg-danger-soft text-danger;
+  }
+
+  /* ── Segmented pill control — toggles/filters (e.g. theme switcher) ── */
+  .segmented {
+    @apply inline-flex items-center gap-1 p-1 rounded-lg bg-surface-hover;
+  }
+  .segmented-btn {
+    @apply flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors text-muted hover:text-ink;
+  }
+  .segmented-btn-active {
+    @apply bg-surface text-accent shadow-sm;
+  }
+
+  /* ── Tables — uppercase muted headers, row dividers, no heavy borders ── */
+  .table-wrap {
+    @apply overflow-x-auto rounded-xl border border-border bg-surface;
+  }
+  .table {
+    @apply w-full text-sm border-collapse;
+  }
+  .table th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-faint border-b border-border;
+  }
+  .table td {
+    @apply px-4 py-3 text-ink border-b border-border;
+  }
+  .table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .table tbody tr:hover td {
+    @apply bg-surface-hover;
   }
 }
 

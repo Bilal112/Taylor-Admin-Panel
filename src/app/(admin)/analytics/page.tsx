@@ -1,10 +1,22 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ComponentType, type SVGProps } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
 import { useAuth } from "@/context/AuthContext";
+import {
+  ScissorsIcon,
+  SwatchIcon,
+  FireIcon,
+  ArchiveBoxIcon,
+  ClipboardDocumentListIcon,
+  CubeIcon,
+  BanknotesIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
 import type { Branch, UserRole } from "@/types/user";
+
+type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Mirrors the response of GET /api/dashboard/staff-performance.
 interface StaffPerf {
@@ -25,11 +37,11 @@ interface StaffPerf {
 
 // One section per production role. "doneLabel" names what a completed order
 // means for that role (cut / stitched / pressed / put on the rack).
-const ROLE_SECTIONS: { role: UserRole; title: string; doneLabel: string }[] = [
-  { role: "cutting_master", title: "✂️ Cutting Masters", doneLabel: "Orders Cut" },
-  { role: "stitcher", title: "🧵 Stitchers", doneLabel: "Orders Stitched" },
-  { role: "presser", title: "🔥 Press Men", doneLabel: "Orders Pressed" },
-  { role: "stock_manager", title: "📦 Stock Managers", doneLabel: "Orders Racked" },
+const ROLE_SECTIONS: { role: UserRole; title: string; doneLabel: string; icon: Icon }[] = [
+  { role: "cutting_master", title: "Cutting Masters", doneLabel: "Orders Cut", icon: ScissorsIcon },
+  { role: "stitcher", title: "Stitchers", doneLabel: "Orders Stitched", icon: SwatchIcon },
+  { role: "presser", title: "Press Men", doneLabel: "Orders Pressed", icon: FireIcon },
+  { role: "stock_manager", title: "Stock Managers", doneLabel: "Orders Racked", icon: ArchiveBoxIcon },
 ];
 
 const day = (d: Date) => d.toLocaleDateString("en-CA"); // YYYY-MM-DD, local
@@ -86,12 +98,19 @@ export default function AnalyticsPage() {
     { pieces: 0, orders: 0, commission: 0, rejections: 0 },
   );
 
+  const totalTiles: { label: string; value: string; icon: Icon }[] = [
+    { label: "Orders Completed", value: totals.orders.toLocaleString(), icon: ClipboardDocumentListIcon },
+    { label: "Pieces Completed", value: totals.pieces.toLocaleString(), icon: CubeIcon },
+    { label: "Commission Payable", value: `PKR ${totals.commission.toLocaleString()}`, icon: BanknotesIcon },
+    { label: "Checker Rejections", value: totals.rejections.toLocaleString(), icon: ExclamationTriangleIcon },
+  ];
+
   const showBranchCol = isSuperAdmin && !branchId;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-ink">
           Staff Performance
         </h1>
         <div className="flex gap-2">
@@ -110,7 +129,7 @@ export default function AnalyticsPage() {
       {/* Filters */}
       <div className="card flex flex-wrap items-end gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-xs font-semibold text-ink mb-1">
             From
           </label>
           <input
@@ -122,7 +141,7 @@ export default function AnalyticsPage() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-xs font-semibold text-ink mb-1">
             To
           </label>
           <input
@@ -135,7 +154,7 @@ export default function AnalyticsPage() {
         </div>
         {isSuperAdmin && (
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-semibold text-ink mb-1">
               Branch
             </label>
             <select
@@ -156,106 +175,100 @@ export default function AnalyticsPage() {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
         </div>
       ) : (
         <>
           {/* Period totals */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              ["Orders Completed", totals.orders.toLocaleString()],
-              ["Pieces Completed", totals.pieces.toLocaleString()],
-              ["Commission Payable", `PKR ${totals.commission.toLocaleString()}`],
-              ["Checker Rejections", totals.rejections.toLocaleString()],
-            ].map(([label, value]) => (
-              <div key={label} className="card">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-                  {value}
-                </p>
+            {totalTiles.map(({ label, value, icon: TileIcon }) => (
+              <div key={label} className="stat-card">
+                <div className="stat-card-label flex items-center gap-1.5">
+                  <TileIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {label}
+                </div>
+                <p className="stat-card-value">{value}</p>
               </div>
             ))}
           </div>
 
-          {ROLE_SECTIONS.map(({ role, title, doneLabel }) => {
+          {ROLE_SECTIONS.map(({ role, title, doneLabel, icon: RoleIcon }) => {
             const staff = rows.filter((r) => r.role === role);
             if (!staff.length) return null;
             const isStock = role === "stock_manager";
             return (
               <div key={role} className="card p-0 overflow-hidden">
-                <h2 className="font-semibold text-gray-700 dark:text-gray-300 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                <h2 className="font-semibold text-ink px-4 py-3 border-b border-border flex items-center gap-1.5">
+                  <RoleIcon className="h-4 w-4 text-accent shrink-0" aria-hidden="true" />
                   {title}
                 </h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="table">
                     <thead>
-                      <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500">
-                        <th className="px-4 py-2">Name</th>
-                        {showBranchCol && <th className="px-4 py-2">Branch</th>}
-                        <th className="px-4 py-2 text-right">{doneLabel}</th>
-                        <th className="px-4 py-2 text-right">Pieces</th>
-                        {isStock && <th className="px-4 py-2 text-right">Delivered</th>}
-                        <th className="px-4 py-2 text-right">Rate (PKR)</th>
-                        <th className="px-4 py-2 text-right">Commission (PKR)</th>
-                        {!isStock && <th className="px-4 py-2 text-right">Rejections</th>}
-                        <th className="px-4 py-2 text-right">Active Now</th>
+                      <tr>
+                        <th>Name</th>
+                        {showBranchCol && <th>Branch</th>}
+                        <th className="text-right">{doneLabel}</th>
+                        <th className="text-right">Pieces</th>
+                        {isStock && <th className="text-right">Delivered</th>}
+                        <th className="text-right">Rate (PKR)</th>
+                        <th className="text-right">Commission (PKR)</th>
+                        {!isStock && <th className="text-right">Rejections</th>}
+                        <th className="text-right">Active Now</th>
                       </tr>
                     </thead>
                     <tbody>
                       {staff.map((s) => (
-                        <tr
-                          key={s._id}
-                          className="border-t border-gray-100 dark:border-gray-800"
-                        >
-                          <td className="px-4 py-2.5">
-                            <span className="font-medium text-gray-800 dark:text-gray-200">
+                        <tr key={s._id}>
+                          <td>
+                            <span className="font-medium text-ink">
                               {s.name}
                             </span>
                             {!s.isActive && (
-                              <span className="ml-2 text-xs text-red-500 dark:text-red-400">
+                              <span className="ml-2 text-xs text-faint">
                                 inactive
                               </span>
                             )}
                             {s.specialization && (
-                              <p className="text-xs text-gray-400 dark:text-gray-500">
+                              <p className="text-xs text-faint">
                                 {s.specialization}
                               </p>
                             )}
                           </td>
                           {showBranchCol && (
-                            <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">
+                            <td className="text-muted">
                               {s.branch?.name || "—"}
                             </td>
                           )}
-                          <td className="px-4 py-2.5 text-right font-semibold text-gray-800 dark:text-gray-200">
+                          <td className="text-right font-semibold text-ink">
                             {s.ordersCompleted.toLocaleString()}
                           </td>
-                          <td className="px-4 py-2.5 text-right text-gray-600 dark:text-gray-300">
+                          <td className="text-right text-muted">
                             {s.piecesCompleted.toLocaleString()}
                           </td>
                           {isStock && (
-                            <td className="px-4 py-2.5 text-right text-gray-600 dark:text-gray-300">
+                            <td className="text-right text-muted">
                               {s.delivered.toLocaleString()}
                             </td>
                           )}
-                          <td className="px-4 py-2.5 text-right text-gray-500 dark:text-gray-400">
+                          <td className="text-right text-muted">
                             {s.commissionPerPiece.toLocaleString()}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-semibold text-gray-800 dark:text-gray-200">
+                          <td className="text-right font-semibold text-ink">
                             {s.commissionEarned.toLocaleString()}
                           </td>
                           {!isStock && (
                             <td
-                              className={`px-4 py-2.5 text-right ${
+                              className={`text-right ${
                                 s.rejections
-                                  ? "text-red-600 dark:text-red-400 font-medium"
-                                  : "text-gray-400 dark:text-gray-500"
+                                  ? "text-danger font-medium"
+                                  : "text-faint"
                               }`}
                             >
                               {s.rejections.toLocaleString()}
                             </td>
                           )}
-                          <td className="px-4 py-2.5 text-right text-gray-600 dark:text-gray-300">
+                          <td className="text-right text-muted">
                             {s.activeOrders.toLocaleString()}
                           </td>
                         </tr>
@@ -268,12 +281,12 @@ export default function AnalyticsPage() {
           })}
 
           {!rows.length && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-muted">
               No production staff found for this selection.
             </p>
           )}
 
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-faint">
             An order counts for a staff member in the period their stage was
             finished (submitted for review or moved onward). Commission = pieces
             completed × that staff member&apos;s current rate per piece.

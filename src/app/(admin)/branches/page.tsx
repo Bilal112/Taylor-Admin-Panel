@@ -3,6 +3,14 @@ import { useEffect, useState, type FormEvent } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
+import {
+  PlusIcon,
+  BuildingStorefrontIcon,
+  MapPinIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  UserIcon,
+} from "@heroicons/react/24/outline";
 import type { Branch } from "@/types/user";
 
 interface BranchForm {
@@ -53,24 +61,25 @@ export default function BranchesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-ink">
           Branches
         </h1>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="btn-primary text-sm"
         >
-          + Add Branch
+          <PlusIcon className="h-4 w-4" aria-hidden="true" />
+          Add Branch
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleCreate} className="card space-y-4">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">New Branch</h2>
+          <h2 className="font-semibold text-ink">New Branch</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {FORM_FIELDS.map(([k, l, req]) => (
               <div key={k} className={k === "address" ? "sm:col-span-2" : ""}>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-semibold text-ink mb-1">
                   {l} {req && "*"}
                 </label>
                 <input
@@ -99,11 +108,11 @@ export default function BranchesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
-          <div className="col-span-full text-center py-12 text-gray-400 dark:text-gray-500">
+          <div className="col-span-full text-center py-12 text-faint">
             Loading…
           </div>
         ) : branches.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-400 dark:text-gray-500">
+          <div className="col-span-full text-center py-12 text-faint">
             No branches yet
           </div>
         ) : (
@@ -113,21 +122,38 @@ export default function BranchesPage() {
               className={`card ${!b.isActive ? "opacity-50" : ""}`}
             >
               <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">🏪 {b.name}</h3>
-                <span
-                  className={`badge ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}
-                >
+                <h3 className="font-semibold text-ink flex items-center gap-1.5">
+                  <BuildingStorefrontIcon className="h-4 w-4 text-accent shrink-0" aria-hidden="true" />
+                  {b.name}
+                </h3>
+                <span className={b.isActive ? "badge-success" : "badge-neutral"}>
                   {b.isActive ? "Active" : "Inactive"}
                 </span>
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                <p>
-                  📍 {b.address}
+              <div className="text-sm text-muted space-y-1">
+                <p className="flex items-center gap-1.5">
+                  <MapPinIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {b.address}
                   {b.city ? `, ${b.city}` : ""}
                 </p>
-                {b.phone && <p>📞 {b.phone}</p>}
-                {b.email && <p>✉️ {b.email}</p>}
-                {b.admin && <p>👤 Admin: {b.admin.name}</p>}
+                {b.phone && (
+                  <p className="flex items-center gap-1.5">
+                    <PhoneIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    {b.phone}
+                  </p>
+                )}
+                {b.email && (
+                  <p className="flex items-center gap-1.5">
+                    <EnvelopeIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    {b.email}
+                  </p>
+                )}
+                {b.admin && (
+                  <p className="flex items-center gap-1.5">
+                    <UserIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    Admin: {b.admin.name}
+                  </p>
+                )}
               </div>
             </div>
           ))

@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ScissorsIcon, ArchiveBoxIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 import type { AxiosError } from "axios";
@@ -28,17 +29,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-light to-white dark:from-gray-900 dark:to-gray-950">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 w-full max-w-md border border-transparent dark:border-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-soft to-bg px-4">
+      <div className="bg-surface rounded-2xl shadow-xl p-8 w-full max-w-md border border-border">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">✂️ Taylor App</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Admin Management System</p>
+          <h1 className="flex items-center justify-center gap-2 text-3xl font-extrabold text-ink">
+            <ScissorsIcon className="h-7 w-7 text-accent" aria-hidden="true" />
+            Taylor App
+          </h1>
+          <p className="text-muted mt-1">Admin Management System</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
-            </label>
+            <label className="block text-sm font-semibold text-ink mb-1">Email</label>
             <input
               type="email"
               required
@@ -49,9 +51,7 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Password
-            </label>
+            <label className="block text-sm font-semibold text-ink mb-1">Password</label>
             <input
               type="password"
               required
@@ -69,14 +69,15 @@ export default function LoginPage() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
-        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
-          Customer?{" "}
-          <Link href="/track" className="text-primary hover:underline">
-            📦 Track your order
+        <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-faint mt-6">
+          <span>Customer?</span>
+          <Link href="/track" className="inline-flex items-center gap-1 text-accent hover:underline">
+            <ArchiveBoxIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            Track your order
           </Link>
-          {" · "}
-          <Link href="/book" className="text-primary hover:underline">
-            📅 Book an appointment
+          <Link href="/book" className="inline-flex items-center gap-1 text-accent hover:underline">
+            <CalendarDaysIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            Book an appointment
           </Link>
         </p>
       </div>

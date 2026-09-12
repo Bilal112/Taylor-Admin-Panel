@@ -8,6 +8,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useDialog } from "@/context/DialogContext";
 import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
 import { hasFeature } from "@/lib/features";
+import {
+  UserPlusIcon,
+  CheckCircleIcon,
+  ScaleIcon,
+  PencilSquareIcon,
+} from "@heroicons/react/24/outline";
 import type { GarmentType, FabricSource, PaymentMethod } from "@/types/order";
 import type { Customer, Measurement } from "@/types/customer";
 import type { User } from "@/types/user";
@@ -470,15 +476,13 @@ export default function NewOrderPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <h1 className="text-xl sm:text-2xl font-extrabold text-ink">
         New Order
       </h1>
 
       {/* ── Step 1: Phone lookup ── */}
       <div className="card space-y-4">
-        <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-          Step 1 — Customer
-        </h2>
+        <h2 className="font-semibold text-ink">Step 1 — Customer</h2>
         <div className="flex gap-2 flex-wrap">
           <input
             className="input flex-1 min-w-[160px]"
@@ -501,17 +505,16 @@ export default function NewOrderPage() {
 
         {/* Found customer */}
         {customerStatus === "found" && customer && (
-          <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-900 rounded-lg p-4 space-y-2">
+          <div className="bg-success-soft border border-success/30 rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-green-800 dark:text-green-300">
-                  ✅ {customer.name}
+                <p className="font-semibold text-success flex items-center gap-1.5">
+                  <CheckCircleIcon className="h-4 w-4" aria-hidden="true" />
+                  {customer.name}
                 </p>
-                <p className="text-sm text-green-600 dark:text-green-400">
-                  {customer.phone}
-                </p>
+                <p className="text-sm text-success">{customer.phone}</p>
                 {customer.suitNo && (
-                  <p className="text-sm text-green-600 dark:text-green-400">
+                  <p className="text-sm text-success">
                     Suit No:{" "}
                     <span className="font-semibold">{customer.suitNo}</span>
                   </p>
@@ -519,7 +522,7 @@ export default function NewOrderPage() {
               </div>
               <button
                 onClick={() => setCustomerStatus("")}
-                className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-xs text-faint hover:text-muted"
               >
                 Change
               </button>
@@ -529,13 +532,14 @@ export default function NewOrderPage() {
             {customer.measurements &&
               Object.keys(customer.measurements).length > 0 && (
                 <div className="mt-2">
-                  <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-2">
-                    📏 Saved Measurements (inches) — update if changed:
+                  <p className="text-xs font-medium text-success mb-2 flex items-center gap-1.5">
+                    <ScaleIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                    Saved Measurements (inches) — update if changed:
                   </p>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {MEASUREMENT_FIELDS.map(([k, l]) => (
                       <div key={k}>
-                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        <label className="block text-xs text-muted mb-1">
                           {l}
                         </label>
                         <input
@@ -556,7 +560,7 @@ export default function NewOrderPage() {
               <div>
                 <button
                   onClick={() => setShowHistory((v) => !v)}
-                  className="text-xs text-primary hover:underline"
+                  className="text-xs text-accent hover:underline"
                 >
                   {showHistory ? "Hide" : "Show"} measurement history (
                   {customer.measurementHistory.length} records)
@@ -566,9 +570,9 @@ export default function NewOrderPage() {
                     {customer.measurementHistory.map((h, i) => (
                       <div
                         key={i}
-                        className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded p-2 text-xs text-gray-600 dark:text-gray-400"
+                        className="bg-surface border border-border rounded p-2 text-xs text-muted"
                       >
-                        <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <p className="font-medium text-ink mb-1">
                           {h.takenAt
                             ? new Date(h.takenAt).toLocaleDateString()
                             : "Unknown date"}
@@ -597,12 +601,13 @@ export default function NewOrderPage() {
 
         {/* New customer */}
         {customerStatus === "new" && (
-          <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg p-4 space-y-3">
-            <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
-              👤 New customer — will be created
+          <div className="bg-accent-soft border border-accent/30 rounded-lg p-4 space-y-3">
+            <p className="text-sm font-medium text-accent flex items-center gap-1.5">
+              <UserPlusIcon className="h-4 w-4" aria-hidden="true" />
+              New customer — will be created
             </p>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <label className="block text-xs font-semibold text-ink mb-1">
                 Customer Name *
               </label>
               <input
@@ -612,15 +617,13 @@ export default function NewOrderPage() {
                 placeholder="Full name"
               />
             </div>
-            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            <p className="text-xs font-semibold text-ink mb-1">
               Measurements (inches) — optional but recommended:
             </p>
             <div className="grid grid-cols-5 gap-2">
               {MEASUREMENT_FIELDS.map(([k, l]) => (
                 <div key={k}>
-                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    {l}
-                  </label>
+                  <label className="block text-xs text-muted mb-1">{l}</label>
                   <input
                     type="number"
                     step="0.5"
@@ -638,13 +641,11 @@ export default function NewOrderPage() {
       {/* ── Step 2: Order details ── */}
       {customerStatus && (
         <form onSubmit={handleSubmit} className="card space-y-4">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-            Step 2 — Order Details
-          </h2>
+          <h2 className="font-semibold text-ink">Step 2 — Order Details</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Suit No
               </label>
               <div className="flex gap-2">
@@ -662,11 +663,12 @@ export default function NewOrderPage() {
                     className="btn-secondary text-sm px-3 shrink-0"
                     title="Change this customer's suit no"
                   >
-                    ✏️ Edit
+                    <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
+                    Edit
                   </button>
                 )}
               </div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-xs text-faint mt-1">
                 {suitNoLocked
                   ? "Auto-filled from the customer's record — click Edit to change it."
                   : originalSuitNo
@@ -675,7 +677,7 @@ export default function NewOrderPage() {
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Promised Date *
               </label>
               <input
@@ -690,11 +692,9 @@ export default function NewOrderPage() {
           </div>
 
           {/* ── Item lines — multiple items per order ── */}
-          <hr className="border-gray-100 dark:border-gray-800" />
+          <hr className="border-border" />
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-700 dark:text-gray-300">
-              Items
-            </h3>
+            <h3 className="font-semibold text-ink">Items</h3>
             <button
               type="button"
               onClick={addItem}
@@ -708,17 +708,17 @@ export default function NewOrderPage() {
             {items.map((it, idx) => (
               <div
                 key={idx}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3 relative"
+                className="border border-border rounded-lg p-3 space-y-3 relative"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">
+                  <span className="text-xs font-semibold text-faint">
                     Item {idx + 1}
                   </span>
                   {items.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeItem(idx)}
-                      className="text-xs text-red-500 dark:text-red-400 hover:underline"
+                      className="text-xs text-danger hover:underline"
                     >
                       Remove
                     </button>
@@ -726,7 +726,7 @@ export default function NewOrderPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-semibold text-ink mb-1">
                       Item Type *
                     </label>
                     <select
@@ -746,7 +746,7 @@ export default function NewOrderPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-semibold text-ink mb-1">
                       Quantity *
                     </label>
                     <input
@@ -759,7 +759,7 @@ export default function NewOrderPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-semibold text-ink mb-1">
                       Price per Unit (PKR)
                       {branchSettings.requireOrderPrice && " *"}
                     </label>
@@ -776,7 +776,7 @@ export default function NewOrderPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-semibold text-ink mb-1">
                       Fabric
                     </label>
                     <input
@@ -787,7 +787,7 @@ export default function NewOrderPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-semibold text-ink mb-1">
                       Fabric Source
                     </label>
                     <select
@@ -808,7 +808,7 @@ export default function NewOrderPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-semibold text-ink mb-1">
                       Fabric Amount (PKR)
                     </label>
                     <input
@@ -823,9 +823,9 @@ export default function NewOrderPage() {
                     />
                   </div>
                 </div>
-                <div className="text-right text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-right text-xs text-muted">
                   Line total:{" "}
-                  <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  <span className="font-semibold text-ink">
                     PKR {itemLineTotal(it).toLocaleString()}
                   </span>
                 </div>
@@ -834,7 +834,7 @@ export default function NewOrderPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-semibold text-ink mb-1">
               Style Notes
             </label>
             <textarea
@@ -846,14 +846,12 @@ export default function NewOrderPage() {
             />
           </div>
 
-          <hr className="border-gray-100 dark:border-gray-800" />
-          <h3 className="font-semibold text-gray-700 dark:text-gray-300">
-            Billing
-          </h3>
+          <hr className="border-border" />
+          <h3 className="font-semibold text-ink">Billing</h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Advance Payment (PKR)
               </label>
               <input
@@ -865,7 +863,7 @@ export default function NewOrderPage() {
                 onChange={(e) => set("advancePayment", e.target.value)}
                 placeholder="0"
               />
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-xs text-faint mt-1">
                 Cannot exceed the order total (PKR{" "}
                 {estimatedTotal.toLocaleString()}).
               </p>
@@ -876,9 +874,9 @@ export default function NewOrderPage() {
                   type="checkbox"
                   checked={form.isRush}
                   onChange={(e) => set("isRush", e.target.checked)}
-                  className="w-4 h-4 text-primary"
+                  className="w-4 h-4 text-accent"
                 />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-semibold text-ink">
                   Rush Order
                 </span>
               </label>
@@ -896,8 +894,8 @@ export default function NewOrderPage() {
           )}
 
           {/* Live total preview */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm space-y-1">
-            <div className="flex justify-between text-gray-500 dark:text-gray-400">
+          <div className="bg-surface-hover rounded-lg p-3 text-sm space-y-1">
+            <div className="flex justify-between text-muted">
               <span>
                 Items Subtotal ({items.length}{" "}
                 {items.length === 1 ? "line" : "lines"})
@@ -905,22 +903,22 @@ export default function NewOrderPage() {
               <span>PKR {itemsSubtotal.toLocaleString()}</span>
             </div>
             {rushAmount > 0 && (
-              <div className="flex justify-between text-gray-500 dark:text-gray-400">
+              <div className="flex justify-between text-muted">
                 <span>Rush Surcharge</span>
                 <span>PKR {rushAmount.toLocaleString()}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-gray-800 dark:text-gray-200 border-t border-gray-200 dark:border-gray-700 pt-1">
+            <div className="flex justify-between font-bold text-ink border-t border-border pt-1">
               <span>Estimated Total</span>
               <span>PKR {estimatedTotal.toLocaleString()}</span>
             </div>
           </div>
 
-          <hr className="border-gray-100 dark:border-gray-800" />
-          <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+          <hr className="border-border" />
+          <h3 className="font-semibold text-ink">
             Staff Assignment (optional)
           </h3>
-          <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
+          <p className="text-xs text-faint -mt-2">
             {branchSettings.autoAssignOrders
               ? "Auto-assign is on — any role left blank is filled automatically (least busy first) so the order starts right away."
               : "The order starts right away only when all three roles are picked — otherwise it's saved as a draft and activated from the order page."}
@@ -928,7 +926,7 @@ export default function NewOrderPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {STAFF_ROLES.map(([field, , label]) => (
               <div key={field}>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-semibold text-ink mb-1">
                   {label}
                 </label>
                 <select

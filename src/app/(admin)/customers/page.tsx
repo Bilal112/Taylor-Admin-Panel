@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
+import { UserPlusIcon } from "@heroicons/react/24/outline";
 import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
 import type { AxiosError } from "axios";
 import type { Customer } from "@/types/customer";
@@ -69,26 +70,23 @@ export default function CustomersPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Customers
-        </h1>
+        <h1 className="text-xl sm:text-2xl font-extrabold text-ink">Customers</h1>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="btn-primary text-sm"
         >
-          + Add Customer
+          <UserPlusIcon className="h-4 w-4" aria-hidden="true" />
+          Add Customer
         </button>
       </div>
 
       {/* Add form */}
       {showForm && (
         <form onSubmit={handleCreate} className="card space-y-4">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">New Customer</h2>
+          <h2 className="font-semibold text-ink">New Customer</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name *
-              </label>
+              <label className="block text-sm font-semibold text-ink mb-1">Name *</label>
               <input
                 required
                 className="input"
@@ -97,9 +95,7 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Phone *
-              </label>
+              <label className="block text-sm font-semibold text-ink mb-1">Phone *</label>
               <input
                 required
                 className="input"
@@ -108,9 +104,7 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email
-              </label>
+              <label className="block text-sm font-semibold text-ink mb-1">Email</label>
               <input
                 type="email"
                 className="input"
@@ -119,9 +113,7 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Gender
-              </label>
+              <label className="block text-sm font-semibold text-ink mb-1">Gender</label>
               <select
                 className="input"
                 value={form.gender}
@@ -135,9 +127,7 @@ export default function CustomersPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Address
-            </label>
+            <label className="block text-sm font-semibold text-ink mb-1">Address</label>
             <input
               className="input"
               value={form.address}
@@ -186,12 +176,10 @@ export default function CustomersPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
         </div>
       ) : customers.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400 dark:text-gray-500">
-          No customers found
-        </div>
+        <div className="card text-center py-12 text-faint">No customers found</div>
       ) : (
         <>
           {/* Mobile: stacked cards */}
@@ -202,12 +190,12 @@ export default function CustomersPage() {
                 href={`/customers/${c._id}`}
                 className="card block space-y-1"
               >
-                <div className="font-medium text-gray-900 dark:text-gray-100">{c.name}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{c.phone}</div>
-                <div className="text-xs text-gray-400 dark:text-gray-500">
+                <div className="font-semibold text-ink">{c.name}</div>
+                <div className="text-sm text-muted">{c.phone}</div>
+                <div className="text-xs text-faint">
                   {c.email || "—"} · {c.gender || "—"}
                 </div>
-                <div className="text-xs text-gray-400 dark:text-gray-500">
+                <div className="text-xs text-faint">
                   {(typeof c.branch === "object" && c.branch?.name) || "—"}
                 </div>
               </Link>
@@ -215,49 +203,32 @@ export default function CustomersPage() {
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+          <div className="hidden md:block table-wrap">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
+              <table className="table">
+                <thead>
                   <tr>
-                    {[
-                      "Name",
-                      "Phone",
-                      "Email",
-                      "Gender",
-                      "Branch",
-                      "Actions",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
-                      >
+                    {["Name", "Phone", "Email", "Gender", "Branch", "Actions"].map((h) => (
+                      <th key={h} className="whitespace-nowrap">
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                <tbody>
                   {customers.map((c) => (
-                    <tr
-                      key={c._id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{c.name}</td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{c.phone}</td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                        {c.email || "—"}
-                      </td>
-                      <td className="px-4 py-3 capitalize text-gray-700 dark:text-gray-300">
-                        {c.gender || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                    <tr key={c._id}>
+                      <td className="font-semibold text-ink">{c.name}</td>
+                      <td className="text-muted">{c.phone}</td>
+                      <td className="text-muted">{c.email || "—"}</td>
+                      <td className="capitalize text-muted">{c.gender || "—"}</td>
+                      <td className="text-muted">
                         {(typeof c.branch === "object" && c.branch?.name) || "—"}
                       </td>
-                      <td className="px-4 py-3">
+                      <td>
                         <Link
                           href={`/customers/${c._id}`}
-                          className="text-primary hover:underline text-xs font-medium"
+                          className="text-accent hover:underline text-xs font-semibold"
                         >
                           View / Edit
                         </Link>

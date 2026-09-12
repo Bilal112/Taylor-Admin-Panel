@@ -5,6 +5,12 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
 import { useAuth } from "@/context/AuthContext";
+import { statusBadgeClass, statusLabel } from "@/lib/orderStatus";
+import {
+  BanknotesIcon,
+  ClipboardDocumentListIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 import type { Branch } from "@/types/user";
 
 // Collections (feature flag `collections`): every order still owing money.
@@ -57,7 +63,7 @@ export default function CollectionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-ink">
           Collections
         </h1>
         {isSuperAdmin && (
@@ -77,19 +83,21 @@ export default function CollectionsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 max-w-md">
-        <div className="card">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="stat-card">
+          <div className="stat-card-label flex items-center gap-1.5">
+            <BanknotesIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
             Total Receivable
-          </p>
-          <p className="text-xl font-bold text-red-600 dark:text-red-400 mt-1">
+          </div>
+          <p className="stat-card-value text-danger">
             PKR {totals.receivable.toLocaleString()}
           </p>
         </div>
-        <div className="card">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="stat-card">
+          <div className="stat-card-label flex items-center gap-1.5">
+            <ClipboardDocumentListIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
             Orders With Balance
-          </p>
-          <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+          </div>
+          <p className="stat-card-value">
             {totals.count.toLocaleString()}
           </p>
         </div>
@@ -97,68 +105,68 @@ export default function CollectionsPage() {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
         </div>
       ) : rows.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400 dark:text-gray-500">
-          🎉 Nothing outstanding — everything is paid up
+        <div className="card text-center py-12 text-faint flex flex-col items-center gap-2">
+          <CheckCircleIcon className="h-8 w-8 text-success" aria-hidden="true" />
+          Nothing outstanding — everything is paid up
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
+        <div className="table-wrap">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="table">
               <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500">
-                  <th className="px-4 py-3">Order</th>
-                  <th className="px-4 py-3">Customer</th>
-                  {isSuperAdmin && !branchId && <th className="px-4 py-3">Branch</th>}
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Total</th>
-                  <th className="px-4 py-3 text-right">Paid</th>
-                  <th className="px-4 py-3 text-right">Balance Due</th>
+                <tr>
+                  <th>Order</th>
+                  <th>Customer</th>
+                  {isSuperAdmin && !branchId && <th>Branch</th>}
+                  <th>Status</th>
+                  <th className="text-right">Total</th>
+                  <th className="text-right">Paid</th>
+                  <th className="text-right">Balance Due</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => {
                   const cust = typeof r.customer === "object" ? r.customer : null;
                   return (
-                    <tr
-                      key={r._id}
-                      className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    >
-                      <td className="px-4 py-3">
+                    <tr key={r._id}>
+                      <td>
                         <Link
                           href={`/orders/${r._id}`}
-                          className="font-mono text-primary hover:underline"
+                          className="font-mono text-accent hover:underline"
                         >
                           {r.suitNo ? `Suit ${r.suitNo}` : r.orderNumber}
                         </Link>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                      <td>
+                        <span className="font-medium text-ink">
                           {cust?.name || "—"}
                         </span>
                         {cust?.phone && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                          <p className="text-xs text-faint">
                             {cust.phone}
                           </p>
                         )}
                       </td>
                       {isSuperAdmin && !branchId && (
-                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                        <td className="text-muted">
                           {(typeof r.branch === "object" && r.branch?.name) || "—"}
                         </td>
                       )}
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 capitalize">
-                        {r.status?.replace(/_/g, " ")}
+                      <td>
+                        <span className={statusBadgeClass(r.status)}>
+                          {statusLabel(r.status)}
+                        </span>
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">
+                      <td className="text-right text-muted">
                         {r.totalPrice?.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">
+                      <td className="text-right text-muted">
                         {r.amountPaid?.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-red-600 dark:text-red-400">
+                      <td className="text-right font-bold text-danger">
                         PKR {r.balanceDue?.toLocaleString()}
                       </td>
                     </tr>

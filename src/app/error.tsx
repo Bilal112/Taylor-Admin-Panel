@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 // Next.js App Router error boundary — catches any render/render-time error
 // in the tree below it and shows this instead of the default Next.js dev/
@@ -19,13 +20,13 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center space-y-4">
-        <div className="text-4xl">⚠️</div>
-        <h1 className="text-lg font-bold text-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-bg px-4">
+      <div className="bg-surface border border-border rounded-2xl shadow-xl p-8 w-full max-w-md text-center space-y-4">
+        <ExclamationTriangleIcon className="h-10 w-10 text-danger mx-auto" aria-hidden="true" />
+        <h1 className="text-lg font-bold text-ink">
           Something went wrong
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted">
           An unexpected error occurred. You can try again, or go back to the
           dashboard.
         </p>

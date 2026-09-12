@@ -4,6 +4,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { normalizePkMobile, PHONE_ERROR } from "@/lib/phone";
 import { to12h } from "@/lib/time";
+import { ScissorsIcon, CheckCircleIcon, ArchiveBoxIcon } from "@heroicons/react/24/outline";
 
 // PUBLIC page — no login. Customers pick a branch, a day and an hour slot,
 // leave their name + phone, and get a confirmation. Availability and all
@@ -116,47 +117,50 @@ export default function BookPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light to-white dark:from-gray-900 dark:to-gray-950 px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-br from-accent-soft to-bg px-4 py-10">
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-primary">
-            <Link href="/">✂️ Taylor App</Link>
+          <h1 className="text-3xl font-extrabold text-ink">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <ScissorsIcon className="h-7 w-7 text-accent" aria-hidden="true" />
+              Taylor App
+            </Link>
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-muted mt-1">
             Book an appointment
           </p>
         </div>
 
         {confirmed ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 text-center space-y-3 border border-transparent dark:border-gray-800">
-            <p className="text-4xl">✅</p>
-            <p className="font-semibold text-gray-900 dark:text-gray-100">
+          <div className="bg-surface rounded-2xl shadow-xl p-6 text-center space-y-3 border border-border">
+            <CheckCircleIcon className="h-10 w-10 text-success mx-auto" aria-hidden="true" />
+            <p className="font-semibold text-ink">
               Appointment booked!
             </p>
-            <div className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
+            <div className="text-sm text-muted space-y-0.5">
               <p>
                 {confirmed.branch} —{" "}
                 {new Date(`${confirmed.date}T00:00:00`).toLocaleDateString()}
               </p>
               <p>Under the name {confirmed.name}</p>
             </div>
-            <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-base font-semibold text-ink">
               Please visit the shop near{" "}
-              <span className="text-primary">
+              <span className="text-accent">
                 {to12h(confirmed.visitTime || confirmed.time)}
               </span>
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">
+            <p className="text-xs text-faint">
               Please arrive on time. To change it, visit or call the shop.
             </p>
           </div>
         ) : (
           <form
             onSubmit={book}
-            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 space-y-4 border border-transparent dark:border-gray-800"
+            className="bg-surface rounded-2xl shadow-xl p-6 space-y-4 border border-border"
           >
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Branch
               </label>
               <select
@@ -174,14 +178,14 @@ export default function BookPage() {
                 ))}
               </select>
               {branch?.address && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                <p className="text-xs text-faint mt-1">
                   {branch.address}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Date
               </label>
               <input
@@ -196,20 +200,20 @@ export default function BookPage() {
             </div>
 
             {slotsMsg && (
-              <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-300">
+              <div className="bg-warning-soft border border-warning/30 rounded-lg p-3 text-sm text-warning">
                 {slotsMsg}
               </div>
             )}
 
             {loadingSlots && (
-              <p className="text-sm text-gray-400 dark:text-gray-500">
+              <p className="text-sm text-faint">
                 Loading times…
               </p>
             )}
 
             {slots.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-semibold text-ink mb-1">
                   Time
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -223,10 +227,10 @@ export default function BookPage() {
                         onClick={() => setTime(s.time)}
                         className={`rounded-lg border px-2 py-2 text-sm font-medium transition-colors ${
                           time === s.time
-                            ? "bg-primary text-white border-primary"
+                            ? "bg-accent text-white border-accent"
                             : disabled
-                              ? "border-gray-200 dark:border-gray-800 text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                              : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-primary"
+                              ? "border-border text-faint cursor-not-allowed"
+                              : "border-border text-muted hover:border-accent hover:text-accent"
                         }`}
                       >
                         {to12h(s.time)}
@@ -246,7 +250,7 @@ export default function BookPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-semibold text-ink mb-1">
                   Your name
                 </label>
                 <input
@@ -259,12 +263,12 @@ export default function BookPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-semibold text-ink mb-1">
                   Phone number
                 </label>
                 <input
                   required
-                  className={`input ${phoneInvalid ? "border-red-400 focus:ring-red-400" : ""}`}
+                  className={`input ${phoneInvalid ? "border-danger focus:ring-danger" : ""}`}
                   placeholder="03XX XXXXXXX"
                   inputMode="tel"
                   maxLength={16}
@@ -272,12 +276,12 @@ export default function BookPage() {
                   onChange={(e) => setPhone(e.target.value)}
                 />
                 {phoneInvalid && (
-                  <p className="text-xs text-red-500 mt-1">{PHONE_ERROR}</p>
+                  <p className="text-xs text-danger mt-1">{PHONE_ERROR}</p>
                 )}
               </div>
             </div>
 
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
 
             <button
               type="submit"
@@ -289,9 +293,10 @@ export default function BookPage() {
           </form>
         )}
 
-        <p className="text-center text-xs text-gray-400 dark:text-gray-500">
-          <Link href="/track" className="text-primary hover:underline">
-            📦 Track your order
+        <p className="text-center text-xs text-faint">
+          <Link href="/track" className="inline-flex items-center gap-1 text-accent hover:underline">
+            <ArchiveBoxIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            Track your order
           </Link>
           {" · "}
           <Link href="/login" className="hover:underline">

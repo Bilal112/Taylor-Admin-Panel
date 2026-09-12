@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { errorMessage } from "@/lib/errorMessage";
 import { isValidObjectId } from "@/lib/validate";
+import { statusLabel, statusBadgeClass } from "@/lib/orderStatus";
 import type { Customer, Measurement } from "@/types/customer";
 import type { Order } from "@/types/order";
 
@@ -94,27 +95,23 @@ export default function CustomerDetailPage() {
   if (loading)
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
       </div>
     );
   if (!customer)
-    return (
-      <div className="text-center py-20 text-gray-400 dark:text-gray-500">Customer not found</div>
-    );
+    return <div className="text-center py-20 text-faint">Customer not found</div>;
 
   return (
     <div className="max-w-3xl space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-        {customer.name}
-      </h1>
+      <h1 className="text-xl sm:text-2xl font-extrabold text-ink">{customer.name}</h1>
 
       {/* Info card */}
       <div className="card space-y-3">
         <div className="flex justify-between items-center">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-300">Customer Info</h2>
+          <h2 className="font-semibold text-ink">Customer Info</h2>
           <button
             onClick={() => setEditInfo((v) => !v)}
-            className="text-xs text-primary hover:underline"
+            className="text-xs text-accent hover:underline"
           >
             {editInfo ? "Cancel" : "Edit"}
           </button>
@@ -126,9 +123,7 @@ export default function CustomerDetailPage() {
           >
             {INFO_FIELDS.map(([k, l]) => (
               <div key={k}>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  {l}
-                </label>
+                <label className="block text-xs font-semibold text-muted mb-1">{l}</label>
                 <input
                   className="input text-sm"
                   value={info[k] || ""}
@@ -150,32 +145,26 @@ export default function CustomerDetailPage() {
             </div>
           </form>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-ink">
             <div>
-              <span className="text-gray-400 dark:text-gray-500">Phone:</span> {customer.phone}
+              <span className="text-faint">Phone:</span> {customer.phone}
             </div>
             <div>
-              <span className="text-gray-400 dark:text-gray-500">Email:</span>{" "}
-              {customer.email || "—"}
+              <span className="text-faint">Email:</span> {customer.email || "—"}
             </div>
             <div>
-              <span className="text-gray-400 dark:text-gray-500">Gender:</span>{" "}
-              {customer.gender || "—"}
+              <span className="text-faint">Gender:</span> {customer.gender || "—"}
             </div>
             <div>
-              <span className="text-gray-400 dark:text-gray-500">Branch:</span>{" "}
+              <span className="text-faint">Branch:</span>{" "}
               {typeof customer.branch === "object" ? customer.branch?.name : ""}
             </div>
             <div className="sm:col-span-2">
-              <span className="text-gray-400 dark:text-gray-500">Address:</span>{" "}
-              {customer.address || "—"}
+              <span className="text-faint">Address:</span> {customer.address || "—"}
             </div>
             <div className="sm:col-span-2">
-              <span className="text-gray-400 dark:text-gray-500">Suit No:</span>{" "}
-              {customer.suitNo || "—"}
-              <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
-                (set on the New Order page)
-              </span>
+              <span className="text-faint">Suit No:</span> {customer.suitNo || "—"}
+              <span className="text-xs text-faint ml-2">(set on the New Order page)</span>
             </div>
           </div>
         )}
@@ -186,7 +175,7 @@ export default function CustomerDetailPage() {
           <div>
             <button
               onClick={() => setShowSuitHistory((v) => !v)}
-              className="text-xs text-primary hover:underline"
+              className="text-xs text-accent hover:underline"
             >
               {showSuitHistory ? "Hide" : "Show"} suit no history (
               {customer.suitNoHistory.length} previous)
@@ -196,7 +185,7 @@ export default function CustomerDetailPage() {
                 {customer.suitNoHistory.map((h, i) => (
                   <div
                     key={h._id || i}
-                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded px-2 py-1 text-xs text-gray-600 dark:text-gray-400"
+                    className="flex items-center justify-between bg-surface-hover rounded px-2 py-1 text-xs text-muted"
                   >
                     <span className="font-mono">{h.suitNo}</span>
                     <span>
@@ -213,11 +202,11 @@ export default function CustomerDetailPage() {
 
       {/* Measurements */}
       <div className="card space-y-3">
-        <h2 className="font-semibold text-gray-700 dark:text-gray-300">Measurements (inches)</h2>
+        <h2 className="font-semibold text-ink">Measurements (inches)</h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
           {MEASUREMENT_FIELDS.map(([k, l]) => (
             <div key={k}>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{l}</label>
+              <label className="block text-xs text-muted mb-1">{l}</label>
               <input
                 type="number"
                 step="0.5"
@@ -234,7 +223,7 @@ export default function CustomerDetailPage() {
           ))}
         </div>
         <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Notes</label>
+          <label className="block text-xs text-muted mb-1">Notes</label>
           <textarea
             className="input text-sm"
             rows={2}
@@ -251,34 +240,25 @@ export default function CustomerDetailPage() {
 
       {/* Orders history */}
       <div className="card">
-        <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
-          Order History ({orders.length})
-        </h2>
+        <h2 className="font-semibold text-ink mb-3">Order History ({orders.length})</h2>
         {orders.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">No orders yet</p>
+          <p className="text-sm text-faint">No orders yet</p>
         ) : (
           <div className="space-y-2">
             {orders.map((o) => (
               <div
                 key={o._id}
-                className="flex items-center justify-between flex-wrap gap-2 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2"
+                className="flex items-center justify-between flex-wrap gap-2 bg-surface-hover rounded-lg px-3 py-2"
               >
                 <div className="min-w-0">
-                  <span className="font-mono text-sm text-primary">
-                    {o.orderNumber}
-                  </span>
-                  <span className="text-gray-500 dark:text-gray-400 text-xs ml-2">
+                  <span className="font-mono text-sm text-accent">{o.orderNumber}</span>
+                  <span className="text-muted text-xs ml-2">
                     {o.items?.map((it) => it.garmentType).join(", ")}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">
-                    {o.status?.replace(/_/g, " ")}
-                  </span>
-                  <Link
-                    href={`/orders/${o._id}`}
-                    className="text-xs text-primary hover:underline"
-                  >
+                  <span className={statusBadgeClass(o.status)}>{statusLabel(o.status)}</span>
+                  <Link href={`/orders/${o._id}`} className="text-xs text-accent hover:underline">
                     View
                   </Link>
                 </div>
