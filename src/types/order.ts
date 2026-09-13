@@ -93,6 +93,7 @@ export interface Order {
   receivedDate?: string;
   promisedDate: string;
   deliveredDate?: string;
+  deliveredBy?: StaffRef;
   isRush?: boolean;
   rushSurcharge?: number;
   discountAmount?: number;

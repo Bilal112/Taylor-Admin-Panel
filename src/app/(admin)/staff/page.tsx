@@ -17,11 +17,12 @@ const ROLE_LABELS: Partial<Record<UserRole, string>> = {
   stitcher: "Stitcher",
   presser: "Press Man",
   stock_manager: "Stock Manager",
+  delivery_staff: "Delivery Staff",
 };
 const ROLES = Object.keys(ROLE_LABELS) as UserRole[];
-// Checker always needs login (reviews orders through the admin panel), same as admin.
-// super_admin is never created from this form.
-const LOGIN_REQUIRED_ROLES: UserRole[] = ["admin", "checker"];
+// Checker and delivery_staff always need login (they work through the admin
+// panel), same as admin. super_admin is never created from this form.
+const LOGIN_REQUIRED_ROLES: UserRole[] = ["admin", "checker", "delivery_staff"];
 
 interface StaffForm {
   name: string;

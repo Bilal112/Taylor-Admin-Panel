@@ -9,7 +9,8 @@ export type UserRole =
   | "cutting_master"
   | "stitcher"
   | "presser"
-  | "stock_manager";
+  | "stock_manager"
+  | "delivery_staff";
 
 export type Gender = "male" | "female" | "other";
 

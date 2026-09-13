@@ -98,6 +98,7 @@ const ROLE_TRANSITIONS: Partial<
   stitcher: { stitching: "stitching_review" },
   presser: { pressing: "pressing_review" },
   stock_manager: { quality_check: "ready", ready: "delivered" },
+  delivery_staff: { ready: "delivered" },
   // Checker can also push received/cutting/stitching/pressing forward
   // themselves (override power), same moves as the working staff make.
   // Approving/rejecting a *_review status is handled by the Review card below.
@@ -490,15 +491,16 @@ export default function OrderDetailPage() {
   const role = user?.role;
   const isAdmin = !!role && ["super_admin", "admin"].includes(role);
   const isChecker = role === "checker";
+  const isDeliveryStaff = role === "delivery_staff";
   const isReviewStage = order.status?.endsWith("_review");
 
   // What each role can see
-  const canSeeCustomerInfo = isAdmin; // name, phone — admin only
+  const canSeeCustomerInfo = isAdmin || isDeliveryStaff; // name, phone — who they're handing the order to
   const canSeeMeasurements =
     isAdmin || isChecker || !role || role !== "stock_manager"; // cutting/stitching/presser + admin/checker need it
   const canSeePricing = isAdmin;
   const canSeeStaffAssignment = isAdmin || isChecker;
-  const canAddPayment = isAdmin;
+  const canAddPayment = isAdmin || isDeliveryStaff;
 
   const currentIdx = STATUS_FLOW.indexOf(order.status);
 
@@ -551,6 +553,16 @@ export default function OrderDetailPage() {
               </span>
             )}
           </div>
+          {order.status === "delivered" && order.deliveredBy && (
+            <p className="text-xs text-muted mt-1.5">
+              Delivered by{" "}
+              <span className="font-semibold text-ink">
+                {(typeof order.deliveredBy === "object" && order.deliveredBy.name) || "—"}
+              </span>
+              {order.deliveredDate &&
+                ` on ${new Date(order.deliveredDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Repeat only finished work — an in-progress or draft order isn't

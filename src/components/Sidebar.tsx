@@ -95,6 +95,7 @@ const navItems: NavItem[] = [
       "stitcher",
       "presser",
       "stock_manager",
+      "delivery_staff",
     ],
   },
   {

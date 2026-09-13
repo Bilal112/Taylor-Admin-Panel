@@ -19,12 +19,23 @@ import {
   PlusIcon,
   ArchiveBoxIcon,
   CheckCircleIcon,
+  XCircleIcon,
   BanknotesIcon,
+  ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/outline";
-import type { Order, OrderStatus } from "@/types/order";
+import type { Order, OrderStatus, PaymentMethod } from "@/types/order";
 import type { Pagination } from "@/types/api";
 
 type Chip = "" | "today" | "overdue" | "unpaid" | "drafts";
+
+// Same set as the order detail page's payment form — kept here too since the
+// list page collects payment (Pay/Deliver quick actions) independently.
+const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
+  { value: "cash", label: "Cash" },
+  { value: "card", label: "Card" },
+  { value: "bank_transfer", label: "Bank Transfer" },
+  { value: "mobile_money", label: "Mobile Money" },
+];
 
 const CHIPS: { key: Chip; label: string; icon: typeof ClockIcon }[] = [
   { key: "", label: "All", icon: DocumentTextIcon },
@@ -44,13 +55,31 @@ export default function OrdersPage() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<Partial<Pagination>>({});
   const [chip, setChip] = useState<Chip>("");
+  // "Awaiting Review" quick filter — the three *_review stages at once,
+  // so a checker doesn't have to pick them one at a time from the dropdown.
+  const [reviewOnly, setReviewOnly] = useState(false);
 
   const isAdmin = !!user && ["super_admin", "admin"].includes(user.role);
+  const isChecker = user?.role === "checker";
+  const isDeliveryStaff = user?.role === "delivery_staff";
+  // Who can approve/reject — same roles the backend's /:id/review and
+  // /bulk-review routes accept.
+  const canReview = isAdmin || isChecker;
+  // Who can use the Deliver/Pay row actions — same roles the backend's
+  // /:id/status (ready->delivered) and /:id/payment routes accept. Not
+  // feature-flagged like the other quick actions below: this is
+  // delivery_staff's entire job, not an optional admin convenience.
+  const canDeliver = isAdmin || isDeliveryStaff;
   const quickActions = isAdmin && hasFeature(user, "orderQuickActions");
-  const canSeeCustomer = isAdmin;
-  const canSeeBalance = isAdmin;
+  const canSeeCustomer = isAdmin || isDeliveryStaff;
+  const canSeeBalance = isAdmin || isDeliveryStaff;
 
   const [refreshing, setRefreshing] = useState(false);
+
+  // Bulk review — selected order ids (only ever populated with orders
+  // currently at a *_review stage; see toggleOne/toggleSelectAll).
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const fetchOrders = async ({ silent = false }: { silent?: boolean } = {}) => {
     if (silent) setRefreshing(true);
@@ -58,7 +87,8 @@ export default function OrdersPage() {
     try {
       const params: Record<string, unknown> = { page, limit: 20 };
       if (search) params.search = search;
-      if (statusFilter) params.status = statusFilter;
+      if (reviewOnly) params.status = "cutting_review,stitching_review,pressing_review";
+      else if (statusFilter) params.status = statusFilter;
       // Quick-filter chips (orderQuickActions feature)
       if (chip === "unpaid") params.unpaid = "1";
       else if (chip === "today") params.due = "today";
@@ -67,6 +97,7 @@ export default function OrdersPage() {
       const { data } = await api.get("/orders", { params });
       setOrders(data.data);
       setPagination(data.pagination);
+      setSelected(new Set());
       if (silent) toast.success("Orders refreshed");
     } catch {
       toast.error("Failed to load orders");
@@ -79,7 +110,76 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, statusFilter, chip]);
+  }, [page, statusFilter, chip, reviewOnly]);
+
+  // ── Bulk review — approve/reject every selected order in one call
+  // instead of opening each order's detail page. Only orders at a *_review
+  // stage are ever selectable (see the checkbox render below). ───────────
+  const reviewableIds = orders
+    .filter((o) => o.status.endsWith("_review"))
+    .map((o) => o._id);
+  const allReviewableSelected =
+    reviewableIds.length > 0 && reviewableIds.every((id) => selected.has(id));
+
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const toggleSelectAll = () =>
+    setSelected(allReviewableSelected ? new Set() : new Set(reviewableIds));
+
+  const runBulkReview = async (decision: "approve" | "reject", remark?: string) => {
+    setBulkBusy(true);
+    try {
+      const { data } = await api.put("/orders/bulk-review", {
+        orderIds: Array.from(selected),
+        decision,
+        remark,
+      });
+      const { succeeded, failed } = data.data as {
+        succeeded: string[];
+        failed: { id: string; message: string }[];
+      };
+      const verb = decision === "approve" ? "approved" : "rejected";
+      if (failed.length === 0) {
+        toast.success(`${succeeded.length} order${succeeded.length === 1 ? "" : "s"} ${verb}`);
+      } else {
+        toast.error(
+          `${succeeded.length} ${verb}, ${failed.length} failed — ${failed[0].message}${failed.length > 1 ? ` (+${failed.length - 1} more)` : ""}`,
+          { duration: 6000 },
+        );
+      }
+      setSelected(new Set());
+      fetchOrders({ silent: true });
+    } catch (err) {
+      toast.error(errorMessage(err, "Bulk review failed"));
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkApprove = async () => {
+    const ok = await dialog.confirm({
+      title: "Approve Selected Orders",
+      message: `Approve all ${selected.size} selected order(s)? Each moves to its next stage.`,
+      confirmText: "Approve All",
+    });
+    if (ok) runBulkReview("approve");
+  };
+
+  const bulkReject = async () => {
+    const remark = await dialog.prompt({
+      title: "Reject Selected Orders",
+      message: `This note (optional) is added to all ${selected.size} selected order(s) — each is sent back to its current working stage.`,
+      placeholder: "e.g. Sleeve length is off — redo",
+      confirmText: "Reject All",
+    });
+    if (remark !== null) runBulkReview("reject", remark.trim() || undefined);
+  };
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -115,8 +215,13 @@ export default function OrdersPage() {
     }
   };
 
-  const collectPayment = async (order: Order) => {
-    const balanceDue = order.balanceDue || 0;
+  // Asks amount, then payment method (same options as the order detail
+  // page's payment form) — two themed prompts in sequence since a single
+  // dialog only ever resolves one value. Returns null if the admin backs
+  // out of either step.
+  const promptForPayment = async (
+    balanceDue: number,
+  ): Promise<{ amount: number; method: PaymentMethod } | null> => {
     const amountStr = await dialog.prompt({
       title: "Collect Payment",
       message: `Balance due: PKR ${balanceDue.toLocaleString()}`,
@@ -124,23 +229,37 @@ export default function OrdersPage() {
       type: "number",
       min: 1,
       max: balanceDue,
-      confirmText: "Record Payment",
+      confirmText: "Next",
     });
-    if (amountStr === null) return;
+    if (amountStr === null) return null;
     const amount = Number(amountStr);
     if (!(amount > 0)) {
       toast.error("Enter a valid amount");
-      return;
+      return null;
     }
     // The `max` attribute only limits the spinner — a typed value can still
     // exceed it, so this is the real gate (the API enforces it too).
     if (amount > balanceDue) {
       toast.error(`Cannot exceed the balance due (PKR ${balanceDue.toLocaleString()})`);
-      return;
+      return null;
     }
+    const method = await dialog.prompt({
+      title: "Payment Method",
+      message: `Recording PKR ${amount.toLocaleString()}. How did they pay?`,
+      type: "select",
+      options: PAYMENT_METHOD_OPTIONS,
+      confirmText: "Record Payment",
+    });
+    if (method === null) return null;
+    return { amount, method: method as PaymentMethod };
+  };
+
+  const collectPayment = async (order: Order) => {
+    const result = await promptForPayment(order.balanceDue || 0);
+    if (!result) return;
     try {
-      await api.put(`/orders/${order._id}/payment`, { amount, method: "cash" });
-      toast.success("Payment recorded 💵");
+      await api.put(`/orders/${order._id}/payment`, result);
+      toast.success("Payment recorded");
       fetchOrders({ silent: true });
     } catch (err) {
       toast.error(errorMessage(err, "Failed to record payment"));
@@ -149,17 +268,31 @@ export default function OrdersPage() {
 
   const deliverOrder = async (order: Order) => {
     try {
-      if ((order.balanceDue || 0) > 0) {
-        const collect = await dialog.confirm({
-          title: "Collect Balance & Deliver",
-          message: `Balance due is PKR ${order.balanceDue.toLocaleString()}. Collect it as cash and mark delivered?`,
-          confirmText: "Collect & Deliver",
+      const balanceDue = order.balanceDue || 0;
+      if (balanceDue > 0) {
+        const paid = await dialog.confirm({
+          title: "Deliver Order",
+          message: `Balance due is PKR ${balanceDue.toLocaleString()}. Did the customer pay before pickup?`,
+          confirmText: "Yes, Collect Payment",
+          cancelText: "No, Deliver Anyway",
         });
-        if (!collect) return;
-        await api.put(`/orders/${order._id}/payment`, {
-          amount: order.balanceDue,
-          method: "cash",
-        });
+        if (paid) {
+          const method = await dialog.prompt({
+            title: "Payment Method",
+            message: `Recording the full balance — PKR ${balanceDue.toLocaleString()}. How did they pay?`,
+            type: "select",
+            options: PAYMENT_METHOD_OPTIONS,
+            confirmText: "Collect & Deliver",
+          });
+          // Backed out of picking a method — stop here rather than deliver
+          // without knowing whether/how the balance was actually collected.
+          if (method === null) return;
+          await api.put(`/orders/${order._id}/payment`, {
+            amount: balanceDue,
+            method: method as PaymentMethod,
+          });
+        }
+        // Not paid — deliver anyway, balance stays outstanding for later.
       } else {
         const ok = await dialog.confirm({
           title: "Deliver Order",
@@ -169,7 +302,7 @@ export default function OrdersPage() {
         if (!ok) return;
       }
       await api.put(`/orders/${order._id}/status`, { status: "delivered" });
-      toast.success("Delivered ✓");
+      toast.success("Delivered");
       fetchOrders({ silent: true });
     } catch (err) {
       toast.error(errorMessage(err, "Failed to deliver order"));
@@ -200,6 +333,7 @@ export default function OrdersPage() {
 
   // Build columns dynamically based on role
   const columns = [
+    { key: "select", label: "", show: canReview },
     { key: "order", label: "Order #", show: true },
     { key: "customer", label: "Customer", show: canSeeCustomer },
     { key: "garment", label: "Garment", show: true },
@@ -253,6 +387,7 @@ export default function OrdersPage() {
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value as OrderStatus | "");
+            setReviewOnly(false);
             setPage(1);
           }}
         >
@@ -264,6 +399,31 @@ export default function OrdersPage() {
           ))}
         </select>
       </div>
+
+      {/* Awaiting-review quick filter — checker/admin only, not feature-gated
+          (this is core review workflow, not the optional orderQuickActions
+          convenience chips below). Spans all three *_review stages at once. */}
+      {canReview && (
+        <div className="flex gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              setReviewOnly((v) => !v);
+              setStatusFilter("");
+              setPage(1);
+            }}
+            className={clsx(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+              reviewOnly
+                ? "bg-accent text-white border-accent"
+                : "border-border text-muted hover:border-accent hover:text-accent",
+            )}
+          >
+            <ClipboardDocumentCheckIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            Awaiting Review
+          </button>
+        </div>
+      )}
 
       {/* Quick-filter chips (orderQuickActions feature) */}
       {quickActions && (
@@ -286,6 +446,40 @@ export default function OrdersPage() {
               {label}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Bulk review action bar — appears once 1+ review-stage rows are picked */}
+      {canReview && selected.size > 0 && (
+        <div className="card flex items-center justify-between flex-wrap gap-3 bg-accent-soft border-accent/30">
+          <span className="text-sm font-semibold text-ink">
+            {selected.size} order{selected.size === 1 ? "" : "s"} selected
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={bulkApprove}
+              disabled={bulkBusy}
+              className="btn-primary text-sm"
+            >
+              <CheckCircleIcon className="h-4 w-4" aria-hidden="true" />
+              Approve All
+            </button>
+            <button
+              onClick={bulkReject}
+              disabled={bulkBusy}
+              className="btn-secondary text-sm"
+            >
+              <XCircleIcon className="h-4 w-4" aria-hidden="true" />
+              Reject All
+            </button>
+            <button
+              onClick={() => setSelected(new Set())}
+              disabled={bulkBusy}
+              className="text-xs text-muted hover:text-ink"
+            >
+              Clear
+            </button>
+          </div>
         </div>
       )}
 
@@ -315,9 +509,25 @@ export default function OrdersPage() {
                     <span className="font-mono font-semibold text-accent text-sm">
                       {order.orderNumber}
                     </span>
-                    <span className={statusBadgeClass(order.status)}>
-                      {statusLabel(order.status)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {canReview && order.status.endsWith("_review") && (
+                        <input
+                          type="checkbox"
+                          className="accent-accent h-4 w-4"
+                          checked={selected.has(order._id)}
+                          readOnly
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleOne(order._id);
+                          }}
+                          aria-label={`Select order ${order.orderNumber} for bulk review`}
+                        />
+                      )}
+                      <span className={statusBadgeClass(order.status)}>
+                        {statusLabel(order.status)}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex gap-1 flex-wrap">
                     {order.isRush && <span className="badge-danger text-xs">RUSH</span>}
@@ -344,6 +554,12 @@ export default function OrdersPage() {
                   </div>
                   {order.suitNo && (
                     <div className="text-xs text-faint">Suit No: {order.suitNo}</div>
+                  )}
+                  {order.status === "delivered" && order.deliveredBy && (
+                    <div className="text-xs text-faint">
+                      Delivered by{" "}
+                      {(typeof order.deliveredBy === "object" && order.deliveredBy.name) || "—"}
+                    </div>
                   )}
                   {canSeeCustomer && customer?.name && (
                     <div className="text-xs text-muted">
@@ -389,7 +605,19 @@ export default function OrdersPage() {
                   <tr>
                     {columns.map((col) => (
                       <th key={col.key} className="whitespace-nowrap">
-                        {col.label}
+                        {col.key === "select" ? (
+                          reviewableIds.length > 0 && (
+                            <input
+                              type="checkbox"
+                              className="accent-accent h-4 w-4"
+                              checked={allReviewableSelected}
+                              onChange={toggleSelectAll}
+                              aria-label="Select all orders awaiting review"
+                            />
+                          )
+                        ) : (
+                          col.label
+                        )}
                       </th>
                     ))}
                   </tr>
@@ -403,6 +631,21 @@ export default function OrdersPage() {
                         key={order._id}
                         className={clsx(dueTomorrow && "bg-danger-soft")}
                       >
+                        {/* Select — checker/admin only, only for orders actually awaiting review */}
+                        {canReview && (
+                          <td>
+                            {order.status.endsWith("_review") && (
+                              <input
+                                type="checkbox"
+                                className="accent-accent h-4 w-4"
+                                checked={selected.has(order._id)}
+                                onChange={() => toggleOne(order._id)}
+                                aria-label={`Select order ${order.orderNumber} for bulk review`}
+                              />
+                            )}
+                          </td>
+                        )}
+
                         {/* Order # — always shown, truncated to keep the column narrow */}
                         <td className="font-mono font-semibold text-accent max-w-[110px]">
                           <div className="flex items-center gap-1 flex-wrap">
@@ -451,6 +694,12 @@ export default function OrdersPage() {
                           </div>
                           {order.suitNo && (
                             <div className="text-xs text-faint">Suit No: {order.suitNo}</div>
+                          )}
+                          {order.status === "delivered" && order.deliveredBy && (
+                            <div className="text-xs text-faint">
+                              Delivered by{" "}
+                              {(typeof order.deliveredBy === "object" && order.deliveredBy.name) || "—"}
+                            </div>
                           )}
                         </td>
 
@@ -501,7 +750,7 @@ export default function OrdersPage() {
                               Rack
                             </button>
                           )}
-                          {quickActions && order.status === "ready" && (
+                          {canDeliver && order.status === "ready" && (
                             <button
                               onClick={() => deliverOrder(order)}
                               className="inline-flex items-center gap-1 text-xs text-success hover:underline mr-3"
@@ -510,7 +759,7 @@ export default function OrdersPage() {
                               Deliver
                             </button>
                           )}
-                          {quickActions &&
+                          {canDeliver &&
                             (order.balanceDue || 0) > 0 &&
                             order.status !== "cancelled" && (
                               <button

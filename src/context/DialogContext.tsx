@@ -30,9 +30,11 @@ export interface PromptOptions {
   placeholder?: string;
   confirmText?: string;
   cancelText?: string;
-  type?: "text" | "number";
+  type?: "text" | "number" | "select";
   min?: number;
   max?: number;
+  // Required when type is "select" — renders a dropdown instead of a text/number input.
+  options?: { value: string; label: string }[];
 }
 
 type Request =
@@ -65,7 +67,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
 
   const prompt = (options: PromptOptions | string): Promise<string | null> => {
     const opts = typeof options === "string" ? { message: options } : options;
-    setInputValue(opts.defaultValue || "");
+    setInputValue(opts.defaultValue || opts.options?.[0]?.value || "");
     return new Promise((resolve) => {
       setRequest({ kind: "prompt", resolve, ...opts });
     });
@@ -115,21 +117,37 @@ export function DialogProvider({ children }: { children: ReactNode }) {
             {request.message && (
               <p className="text-sm text-muted whitespace-pre-line">{request.message}</p>
             )}
-            {request.kind === "prompt" && (
-              <input
+            {request.kind === "prompt" && request.type === "select" ? (
+              <select
                 autoFocus
-                type={request.type === "number" ? "number" : "text"}
-                min={request.min}
-                max={request.max}
                 className="input"
-                placeholder={request.placeholder}
                 aria-label={request.title || request.message}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                  if (e.key === "Enter") handleConfirm();
-                }}
-              />
+              >
+                {request.options?.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              request.kind === "prompt" && (
+                <input
+                  autoFocus
+                  type={request.type === "number" ? "number" : "text"}
+                  min={request.min}
+                  max={request.max}
+                  className="input"
+                  placeholder={request.placeholder}
+                  aria-label={request.title || request.message}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === "Enter") handleConfirm();
+                  }}
+                />
+              )
             )}
             <div className="flex justify-end gap-2 pt-1">
               <button onClick={handleCancel} className="btn-secondary text-sm">
